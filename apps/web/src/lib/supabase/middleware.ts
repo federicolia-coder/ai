@@ -35,7 +35,8 @@ export async function updateSession(request: NextRequest) {
   const isProtectedPage =
     request.nextUrl.pathname.startsWith("/chat") ||
     request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/settings");
+    request.nextUrl.pathname.startsWith("/settings") ||
+    request.nextUrl.pathname.startsWith("/plugins");
 
   if (!user && isProtectedPage) {
     const url = request.nextUrl.clone();

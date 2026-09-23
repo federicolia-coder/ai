@@ -1,4 +1,6 @@
+import ipaddress
 import os
+import socket
 from typing import Any
 from urllib.parse import urlparse
 
@@ -8,6 +10,18 @@ from runtime.tools.base import Tool, ToolDefinition
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("HTTP_ALLOWED_HOSTS", "").split(",") if h.strip()]
 MAX_RESPONSE_SIZE = 50_000
+
+
+def _is_private_ip(host: str) -> bool:
+    try:
+        for info in socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM):
+            addr = info[4][0]
+            ip = ipaddress.ip_address(addr)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                return True
+    except (socket.gaierror, ValueError):
+        return True
+    return False
 
 
 class HttpRequestTool(Tool):
@@ -52,15 +66,13 @@ class HttpRequestTool(Tool):
         if not parsed.hostname:
             return {"error": "Invalid URL"}
 
-        # SSRF protection
         hostname = parsed.hostname.lower()
-        if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
-            return {"error": "Local addresses are not allowed"}
-        if hostname.startswith("10.") or hostname.startswith("192.168.") or hostname.startswith("172."):
-            return {"error": "Private network addresses are not allowed"}
 
         if ALLOWED_HOSTS and hostname not in ALLOWED_HOSTS:
             return {"error": f"Host not in allowlist: {hostname}"}
+
+        if _is_private_ip(hostname):
+            return {"error": "Private/internal addresses are not allowed"}
 
         if method not in ("GET", "POST"):
             return {"error": "Only GET and POST methods are supported"}

@@ -50,7 +50,12 @@ async function verifyStripeSignature(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  return hex === expectedSig;
+  if (hex !== expectedSig) return false;
+
+  const age = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
+  if (age > 300) return false;
+
+  return true;
 }
 
 Deno.serve(async (req: Request) => {

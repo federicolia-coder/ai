@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: tarry-web
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: cd apps/web && npm install && npx next build
+    startCommand: cd apps/web && npx next start -p $PORT
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
+    autoDeploy: true

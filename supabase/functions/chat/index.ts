@@ -53,6 +53,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    if (typeof message !== "string" || message.length > 16000) {
+      return new Response(
+        JSON.stringify({ error: "Message too long (max 16000 characters)" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""

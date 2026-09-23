@@ -30,7 +30,7 @@ export function Composer() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const content = input.trim();
-    if (!content || isGenerating) return;
+    if (!content || isGenerating || content.length > 16000) return;
 
     const supabase = createClient();
     const {
