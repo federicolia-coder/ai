@@ -1,0 +1,22 @@
+services:
+  runtime:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - RUNTIME_HOST=0.0.0.0
+      - RUNTIME_PORT=8000
+      - RUNTIME_SECRET=${RUNTIME_SECRET}
+      - MODEL_PATH=/app/model/weights/model.gguf
+      - MAX_CONCURRENT_REQUESTS=2
+      - MAX_CONTEXT_LENGTH=2048
+      - MAX_GENERATION_LENGTH=1024
+      - WEB_SEARCH_API_KEY=${WEB_SEARCH_API_KEY}
+      - WEB_SEARCH_PROVIDER=${WEB_SEARCH_PROVIDER:-brave}
+    volumes:
+      - ./runtime/model/weights:/app/model/weights:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3584M

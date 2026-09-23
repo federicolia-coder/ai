@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #ffffff;
+    --color-bg-secondary: #f8f9fa;
+    --color-bg-tertiary: #f0f1f3;
+    --color-text: #1a1d23;
+    --color-text-secondary: #5f6368;
+    --color-text-tertiary: #9aa0a6;
+    --color-border: #e2e5e9;
+    --color-border-light: #eef0f2;
+    --color-accent: #2563eb;
+    --color-accent-hover: #1d4ed8;
+    --color-danger: #dc2626;
+    --color-success: #16a34a;
+    --color-warning: #d97706;
+  }
+
+  .dark {
+    --color-bg: #0f1117;
+    --color-bg-secondary: #1a1d27;
+    --color-bg-tertiary: #242731;
+    --color-text: #e8eaed;
+    --color-text-secondary: #9aa0a6;
+    --color-text-tertiary: #5f6368;
+    --color-border: #2d3039;
+    --color-border-light: #23262f;
+    --color-accent: #4b8bff;
+    --color-accent-hover: #6da0ff;
+    --color-danger: #f87171;
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2
+           text-sm font-medium transition-colors duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+           disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn text-white;
+    background: var(--color-accent);
+  }
+  .btn-primary:hover {
+    background: var(--color-accent-hover);
+  }
+
+  .btn-secondary {
+    @apply btn;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+  }
+  .btn-secondary:hover {
+    background: var(--color-bg-tertiary);
+  }
+
+  .btn-ghost {
+    @apply btn;
+    color: var(--color-text-secondary);
+  }
+  .btn-ghost:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
+  }
+
+  .input-field {
+    @apply w-full rounded-lg px-3 py-2 text-sm transition-colors;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+  }
+  .input-field:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  }
+
+  .card {
+    @apply rounded-xl p-5;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-light);
+  }
+}
