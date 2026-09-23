@@ -17,6 +17,8 @@ export function Sidebar() {
     sidebarOpen,
   } = useChatStore();
   const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   useEffect(() => {
     loadConversations();
@@ -48,7 +50,7 @@ export function Sidebar() {
 
     if (data) {
       setConversations([data as Conversation, ...conversations]);
-      setCurrentConversation(data.id);
+      setCurrentConversation(data.id as string);
       setMessages([]);
     }
   }
@@ -64,6 +66,40 @@ export function Sidebar() {
       .order("created_at", { ascending: true });
 
     if (data) setMessages(data as any);
+  }
+
+  async function renameConversation(id: string) {
+    if (!editTitle.trim()) {
+      setEditingId(null);
+      return;
+    }
+    const supabase = createClient();
+    await supabase
+      .from("conversations")
+      .update({ title: editTitle.trim() })
+      .eq("id", id);
+
+    setConversations(
+      conversations.map((c) =>
+        c.id === id ? { ...c, title: editTitle.trim() } : c
+      )
+    );
+    setEditingId(null);
+  }
+
+  async function archiveConversation(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    const supabase = createClient();
+    await supabase
+      .from("conversations")
+      .update({ archived: true })
+      .eq("id", id);
+
+    setConversations(conversations.filter((c) => c.id !== id));
+    if (currentConversationId === id) {
+      setCurrentConversation(null);
+      setMessages([]);
+    }
   }
 
   async function deleteConversation(id: string, e: React.MouseEvent) {
@@ -99,9 +135,15 @@ export function Sidebar() {
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--color-border-light)" }}>
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b"
+        style={{ borderColor: "var(--color-border-light)" }}
+      >
         <span className="text-sm font-semibold tracking-tight">Tarry</span>
-        <button onClick={createConversation} className="btn-ghost px-2 py-1 text-xs">
+        <button
+          onClick={createConversation}
+          className="btn-ghost px-2 py-1 text-xs"
+        >
           + Nuova
         </button>
       </div>
@@ -120,10 +162,10 @@ export function Sidebar() {
       {/* Conversations */}
       <div className="flex-1 overflow-y-auto px-2 py-1">
         {filtered.map((c) => (
-          <button
+          <div
             key={c.id}
             onClick={() => selectConversation(c.id)}
-            className="group flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors"
+            className="group flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer"
             style={{
               background:
                 currentConversationId === c.id
@@ -132,15 +174,53 @@ export function Sidebar() {
               color: "var(--color-text)",
             }}
           >
-            <span className="truncate flex-1">{c.title}</span>
-            <button
-              onClick={(e) => deleteConversation(c.id, e)}
-              className="ml-2 hidden text-xs opacity-50 hover:opacity-100 group-hover:inline"
-              aria-label="Delete conversation"
-            >
-              &times;
-            </button>
-          </button>
+            {editingId === c.id ? (
+              <input
+                autoFocus
+                className="flex-1 bg-transparent text-sm outline-none"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onBlur={() => renameConversation(c.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") renameConversation(c.id);
+                  if (e.key === "Escape") setEditingId(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span className="truncate flex-1">{c.title}</span>
+            )}
+            <div className="ml-2 hidden items-center gap-0.5 group-hover:flex">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingId(c.id);
+                  setEditTitle(c.title);
+                }}
+                className="text-xs opacity-50 hover:opacity-100 px-0.5"
+                aria-label="Rename"
+                title="Rinomina"
+              >
+                &#9998;
+              </button>
+              <button
+                onClick={(e) => archiveConversation(c.id, e)}
+                className="text-xs opacity-50 hover:opacity-100 px-0.5"
+                aria-label="Archive"
+                title="Archivia"
+              >
+                &#128230;
+              </button>
+              <button
+                onClick={(e) => deleteConversation(c.id, e)}
+                className="text-xs opacity-50 hover:opacity-100 px-0.5"
+                aria-label="Delete"
+                title="Elimina"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
         ))}
         {filtered.length === 0 && (
           <p
@@ -162,6 +242,12 @@ export function Sidebar() {
           className="btn-ghost w-full justify-start text-xs"
         >
           Dashboard
+        </button>
+        <button
+          onClick={() => router.push("/plugins")}
+          className="btn-ghost w-full justify-start text-xs"
+        >
+          Plugin
         </button>
         <button
           onClick={() => router.push("/settings")}

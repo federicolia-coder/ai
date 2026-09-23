@@ -53,6 +53,29 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Rate limiting
+    const { data: rateOk } = await adminClient.rpc("check_rate_limit", {
+      p_user_id: user.id,
+      p_action: "chat",
+      p_window_seconds: 60,
+      p_max_requests: 20,
+    });
+
+    if (rateOk === false) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please wait a moment." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Verify conversation ownership
     const { data: conversation, error: convError } = await supabase
       .from("conversations")
@@ -72,11 +95,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // Check token usage
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     const { data: usage } = await adminClient
       .from("usage")
       .select("*")

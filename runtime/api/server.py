@@ -18,6 +18,7 @@ from runtime.tools.registry import ToolRegistry
 from runtime.plugins.calculator import CalculatorTool
 from runtime.plugins.web_search import WebSearchTool
 from runtime.plugins.http_request import HttpRequestTool
+from runtime.plugins.files import FileReadTool, FileSearchTool
 from runtime.agent.loop import AgentLoop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -44,6 +45,8 @@ async def startup():
     tools.register(CalculatorTool())
     tools.register(WebSearchTool())
     tools.register(HttpRequestTool())
+    tools.register(FileReadTool())
+    tools.register(FileSearchTool())
     try:
         model.load()
     except Exception as e:
