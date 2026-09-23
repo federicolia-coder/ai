@@ -1,9 +1,37 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useChatStore } from "@/lib/store";
+
+function CopyButton({ text }: { text: string }) {
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute top-2 right-2 rounded px-1.5 py-0.5 text-xs opacity-0 group-hover:opacity-70 hover:!opacity-100 transition-opacity"
+      style={{
+        background: "var(--color-bg-secondary)",
+        color: "var(--color-text-secondary)",
+      }}
+      title="Copia"
+    >
+      &#128203;
+    </button>
+  );
+}
 
 export function ChatMessages() {
   const { messages, isGenerating } = useChatStore();
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isGenerating]);
 
   if (messages.length === 0) {
     return (
@@ -27,7 +55,7 @@ export function ChatMessages() {
         {messages
           .filter((m) => m.role !== "system")
           .map((m) => (
-            <div key={m.id} className="flex gap-3">
+            <div key={m.id} className="group relative flex gap-3">
               <div
                 className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium"
                 style={{
@@ -52,9 +80,18 @@ export function ChatMessages() {
                     ? "Tool"
                     : "Tarry"}
                 </p>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {m.content}
-                </div>
+                {m.role === "assistant" ? (
+                  <div className="prose-tarry text-sm leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {m.content}
+                    </ReactMarkdown>
+                    <CopyButton text={m.content} />
+                  </div>
+                ) : (
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {m.content}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -77,15 +114,33 @@ export function ChatMessages() {
               >
                 Tarry
               </p>
-              <div
-                className="text-sm animate-pulse"
-                style={{ color: "var(--color-text-tertiary)" }}
-              >
-                Thinking...
+              <div className="flex gap-1">
+                <span
+                  className="h-2 w-2 rounded-full animate-bounce"
+                  style={{
+                    background: "var(--color-text-tertiary)",
+                    animationDelay: "0ms",
+                  }}
+                />
+                <span
+                  className="h-2 w-2 rounded-full animate-bounce"
+                  style={{
+                    background: "var(--color-text-tertiary)",
+                    animationDelay: "150ms",
+                  }}
+                />
+                <span
+                  className="h-2 w-2 rounded-full animate-bounce"
+                  style={{
+                    background: "var(--color-text-tertiary)",
+                    animationDelay: "300ms",
+                  }}
+                />
               </div>
             </div>
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
     </div>
   );

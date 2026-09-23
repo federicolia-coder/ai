@@ -163,6 +163,7 @@ export function Composer() {
             onKeyDown={handleKeyDown}
             placeholder="Scrivi un messaggio..."
             rows={1}
+            maxLength={16000}
             className="flex-1 resize-none bg-transparent py-1 text-sm outline-none"
             style={{ color: "var(--color-text)" }}
             disabled={isGenerating}
@@ -172,7 +173,7 @@ export function Composer() {
             disabled={isGenerating || !input.trim()}
             className="btn-primary shrink-0 px-3 py-1.5 text-xs"
           >
-            Invia
+            {isGenerating ? "..." : "Invia"}
           </button>
         </div>
         <p

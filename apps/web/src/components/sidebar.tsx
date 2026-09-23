@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useChatStore } from "@/lib/store";
 import type { Conversation } from "@/types/database";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Sidebar() {
   const router = useRouter();
@@ -255,6 +256,7 @@ export function Sidebar() {
         >
           Impostazioni
         </button>
+        <ThemeToggle />
         <button
           onClick={handleLogout}
           className="btn-ghost w-full justify-start text-xs"

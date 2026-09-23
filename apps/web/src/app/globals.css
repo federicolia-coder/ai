@@ -96,4 +96,50 @@
     background: var(--color-bg);
     border: 1px solid var(--color-border-light);
   }
+
+  .prose-tarry {
+    @apply relative;
+  }
+  .prose-tarry p { @apply mb-3 last:mb-0; }
+  .prose-tarry h1, .prose-tarry h2, .prose-tarry h3 {
+    @apply font-semibold mt-4 mb-2;
+  }
+  .prose-tarry h1 { @apply text-lg; }
+  .prose-tarry h2 { @apply text-base; }
+  .prose-tarry h3 { @apply text-sm; }
+  .prose-tarry ul, .prose-tarry ol { @apply pl-5 mb-3; }
+  .prose-tarry ul { @apply list-disc; }
+  .prose-tarry ol { @apply list-decimal; }
+  .prose-tarry li { @apply mb-1; }
+  .prose-tarry code {
+    @apply rounded px-1 py-0.5 text-xs font-mono;
+    background: var(--color-bg-tertiary);
+  }
+  .prose-tarry pre {
+    @apply rounded-lg p-3 mb-3 overflow-x-auto text-xs;
+    background: var(--color-bg-tertiary);
+  }
+  .prose-tarry pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose-tarry blockquote {
+    @apply border-l-2 pl-3 mb-3 italic;
+    border-color: var(--color-border);
+    color: var(--color-text-secondary);
+  }
+  .prose-tarry a {
+    color: var(--color-accent);
+    @apply underline;
+  }
+  .prose-tarry table {
+    @apply w-full text-xs mb-3 border-collapse;
+  }
+  .prose-tarry th, .prose-tarry td {
+    @apply border px-2 py-1 text-left;
+    border-color: var(--color-border);
+  }
+  .prose-tarry th {
+    background: var(--color-bg-secondary);
+    @apply font-medium;
+  }
 }
