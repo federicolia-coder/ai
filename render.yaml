@@ -4,8 +4,8 @@ services:
     runtime: node
     region: frankfurt
     plan: starter
-    buildCommand: cd apps/web && npm install && npx next build
-    startCommand: cd apps/web && npx next start -p $PORT
+    buildCommand: npm install && npm run build --workspace=apps/web
+    startCommand: npm run start --workspace=apps/web -- -p $PORT
     envVars:
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
