@@ -1,0 +1,5 @@
+runtime/model/weights/
+.git
+.env
+node_modules
+apps/
