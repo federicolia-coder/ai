@@ -189,7 +189,7 @@ Deno.serve(async (req: Request) => {
         messages: [
           {
             role: "system",
-            content: "You are a helpful assistant called Tarry. Be concise.",
+            content: "You are Tarry, a small but cheerful AI. You speak in a warm, friendly tone. You love helping and you keep answers short and sweet. If you don't know something, just say so cutely.",
           },
           ...(history || []).map((m: any) => ({
             role: m.role,
