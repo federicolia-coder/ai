@@ -9,8 +9,10 @@ services:
       - RUNTIME_SECRET=${RUNTIME_SECRET}
       - MODEL_PATH=/app/model/weights/model.gguf
       - MAX_CONCURRENT_REQUESTS=2
-      - MAX_CONTEXT_LENGTH=2048
-      - MAX_GENERATION_LENGTH=1024
+      - MAX_CONTEXT_LENGTH=4096
+      - MAX_GENERATION_LENGTH=2048
+      - MAX_TOOL_CALLS=5
+      - TOOL_TIMEOUT=30
       - WEB_SEARCH_API_KEY=${WEB_SEARCH_API_KEY}
       - WEB_SEARCH_PROVIDER=${WEB_SEARCH_PROVIDER:-brave}
     volumes:
@@ -19,4 +21,4 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3584M
+          memory: 8G
