@@ -15,10 +15,10 @@ TOOL_CALL_PATTERN = re.compile(
     re.DOTALL,
 )
 
-TOOL_SYSTEM_PROMPT = """You have tools. To use one, write EXACTLY:
+TOOL_SYSTEM_PROMPT = """You have access to tools. To use one, write EXACTLY this format:
 <tool_call>{"name": "tool_name", "arguments": {"param": "value"}}</tool_call>
 
-When you receive a tool result, summarize it naturally for the user.
+After receiving the result, present the information clearly to the user. Use the result data directly — do not invent or guess values.
 
 Available tools:
 """
@@ -160,7 +160,7 @@ class AgentLoop:
                 working_messages.append({"role": "assistant", "content": clean_assistant})
             working_messages.append({
                 "role": "user",
-                "content": f"Here is the information I found:\n{formatted}\n\nSummarize this for me.",
+                "content": f"[Tool result for {tool_name}]\n{formatted}",
             })
 
         return {

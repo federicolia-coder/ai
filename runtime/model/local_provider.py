@@ -42,8 +42,8 @@ class LocalModelProvider(ModelProvider):
             top_p=0.9,
             min_p=0.05,
             stop=stop or [],
-            repeat_penalty=1.15,
-            frequency_penalty=0.1,
+            repeat_penalty=1.05,
+            frequency_penalty=0.0,
         )
 
         choice = response["choices"][0]
