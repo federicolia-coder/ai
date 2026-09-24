@@ -207,6 +207,78 @@ function getSteps(metadata: unknown): ToolStep[] {
   return [];
 }
 
+function getAttachments(metadata: unknown): string[] {
+  if (!metadata || typeof metadata !== "object") return [];
+  const m = metadata as Record<string, unknown>;
+  if (Array.isArray(m.attachments)) return m.attachments as string[];
+  return [];
+}
+
+const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
+
+function isImagePath(path: string): boolean {
+  const ext = path.split(".").pop()?.toLowerCase() || "";
+  return IMAGE_EXTS.includes(ext);
+}
+
+function getPublicUrl(path: string): string {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  return `${base}/storage/v1/object/public/attachments/${path}`;
+}
+
+function AttachmentDisplay({ paths }: { paths: string[] }) {
+  if (paths.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-2">
+      {paths.map((path, i) => {
+        const fileName = path.split("/").pop() || path;
+        const url = getPublicUrl(path);
+
+        if (isImagePath(path)) {
+          return (
+            <a
+              key={i}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-lg overflow-hidden"
+              style={{ border: "1px solid var(--color-border-light)" }}
+            >
+              <img
+                src={url}
+                alt={fileName}
+                className="max-w-[240px] max-h-[180px] object-cover"
+                loading="lazy"
+              />
+            </a>
+          );
+        }
+        return (
+          <a
+            key={i}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
+            style={{
+              background: "var(--color-bg-secondary)",
+              border: "1px solid var(--color-border-light)",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 1h4l4 4v7a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" />
+              <path d="M8 1v4h4" />
+            </svg>
+            <span className="max-w-[160px] truncate">{fileName}</span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ChatMessages() {
   const { messages, isGenerating } = useChatStore();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -248,6 +320,7 @@ export function ChatMessages() {
           .filter((m) => m.role !== "system")
           .map((m) => {
             const steps = m.role === "assistant" ? getSteps(m.metadata) : [];
+            const attachments = m.role === "user" ? getAttachments(m.metadata) : [];
             return (
               <div key={m.id} className="group relative flex gap-3">
                 <Avatar role={m.role} />
@@ -258,6 +331,9 @@ export function ChatMessages() {
                   >
                     {m.role === "user" ? "Tu" : "Tarry"}
                   </p>
+                  {m.role === "user" && attachments.length > 0 && (
+                    <AttachmentDisplay paths={attachments} />
+                  )}
                   {m.role === "assistant" && steps.length > 0 && (
                     <ToolSteps steps={steps} />
                   )}

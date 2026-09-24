@@ -312,6 +312,19 @@ export function Sidebar() {
           Plugin
         </button>
         <button
+          onClick={() => router.push("/connectors")}
+          className="btn-ghost w-full justify-start text-xs gap-2"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 3v4a2 2 0 01-2 2H2" />
+            <path d="M10 3v4a2 2 0 002 2h2" />
+            <circle cx="6" cy="3" r="1.5" />
+            <circle cx="10" cy="3" r="1.5" />
+            <path d="M2 13h12" />
+          </svg>
+          Connettori
+        </button>
+        <button
           onClick={() => router.push("/settings")}
           className="btn-ghost w-full justify-start text-xs gap-2"
         >

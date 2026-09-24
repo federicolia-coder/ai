@@ -237,3 +237,36 @@ export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 export type ApiKey = Database["public"]["Tables"]["api_keys"]["Row"];
 export type Plugin = Database["public"]["Tables"]["plugins"]["Row"];
 export type UserPlugin = Database["public"]["Tables"]["user_plugins"]["Row"];
+
+export interface Attachment {
+  id: string;
+  user_id: string;
+  message_id: string | null;
+  conversation_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  created_at: string;
+}
+
+export interface Connector {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  auth_type: string;
+  config_schema: Record<string, unknown>;
+  enabled: boolean;
+  created_at: string;
+}
+
+export interface UserConnector {
+  id: string;
+  user_id: string;
+  connector_id: string;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
