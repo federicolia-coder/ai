@@ -199,7 +199,7 @@ Deno.serve(async (req: Request) => {
           { role: "user", content: message },
         ],
         tools: enabledTools,
-        max_tokens: 1024,
+        max_tokens: 512,
         user_id: user.id,
       }),
     });
