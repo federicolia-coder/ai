@@ -38,8 +38,11 @@ class LocalModelProvider(ModelProvider):
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
+            top_p=0.9,
+            min_p=0.05,
             stop=stop or [],
-            repeat_penalty=1.1,
+            repeat_penalty=1.15,
+            frequency_penalty=0.1,
         )
 
         choice = response["choices"][0]

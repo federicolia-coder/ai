@@ -15,10 +15,12 @@ TOOL_CALL_PATTERN = re.compile(
     re.DOTALL,
 )
 
-TOOL_SYSTEM_PROMPT = """You can use tools with this format:
+TOOL_SYSTEM_PROMPT = """You have tools. To use one, write EXACTLY this format (no extra text around it):
 <tool_call>{"name": "tool_name", "arguments": {"param": "value"}}</tool_call>
 
-Tools:
+Use a tool ONLY when needed. After getting the tool result, give your final answer to the user.
+
+Available tools:
 """
 
 
