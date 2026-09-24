@@ -100,7 +100,7 @@ class AgentLoop:
             result = self.model.generate(
                 messages=working_messages,
                 max_tokens=max_tokens,
-                temperature=0.3,
+                temperature=0.6,
             )
 
             total_input += result.get("input_tokens", 0)
