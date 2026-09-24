@@ -11,7 +11,7 @@ from runtime.config.settings import MAX_TOOL_CALLS, TOOL_TIMEOUT
 logger = logging.getLogger(__name__)
 
 TOOL_CALL_PATTERN = re.compile(
-    r'<tool_call>\s*\{[^}]*"name"\s*:\s*"(\w+)"[^}]*"arguments"\s*:\s*(\{[^}]*\})[^}]*\}\s*</tool_call>',
+    r'<tool_call>\s*(\{.*?\})\s*</tool_call>',
     re.DOTALL,
 )
 
@@ -22,6 +22,32 @@ When you receive a tool result, summarize it naturally for the user.
 
 Available tools:
 """
+
+
+def _parse_tool_call(text: str) -> tuple[str, dict] | None:
+    match = TOOL_CALL_PATTERN.search(text)
+    if not match:
+        return None
+    raw = match.group(1)
+    try:
+        obj = json.loads(raw)
+        name = obj.get("name", "")
+        args = obj.get("arguments", {})
+        if name:
+            return name, args if isinstance(args, dict) else {}
+    except json.JSONDecodeError:
+        name_match = re.search(r'"name"\s*:\s*"(\w+)"', raw)
+        args_match = re.search(r'"arguments"\s*:\s*(\{[^}]*\})', raw)
+        if name_match:
+            name = name_match.group(1)
+            args = {}
+            if args_match:
+                try:
+                    args = json.loads(args_match.group(1))
+                except json.JSONDecodeError:
+                    pass
+            return name, args
+    return None
 
 
 def _format_tool_result(tool_name: str, result: dict) -> str:
@@ -56,6 +82,7 @@ class AgentLoop:
         steps: list[dict[str, Any]] = []
         total_input = 0
         total_output = 0
+        last_tool_result: str | None = None
 
         working_messages = list(messages)
 
@@ -80,11 +107,15 @@ class AgentLoop:
             total_output += result.get("output_tokens", 0)
             content = result.get("content", "")
 
-            tool_match = TOOL_CALL_PATTERN.search(content)
-            if not tool_match or iteration >= MAX_TOOL_CALLS:
+            logger.info("Model output (iter %d): %s", iteration, content[:200])
+
+            parsed = _parse_tool_call(content)
+            if not parsed or iteration >= MAX_TOOL_CALLS:
                 clean_content = TOOL_CALL_PATTERN.sub("", content).strip()
+                if not clean_content and last_tool_result:
+                    clean_content = last_tool_result
                 return {
-                    "content": clean_content or content,
+                    "content": clean_content or content or "Sorry, I could not generate a response.",
                     "tools_used": tools_used,
                     "steps": steps,
                     "input_tokens": total_input,
@@ -92,11 +123,7 @@ class AgentLoop:
                     "total_tokens": total_input + total_output,
                 }
 
-            tool_name = tool_match.group(1)
-            try:
-                tool_args = json.loads(tool_match.group(2))
-            except json.JSONDecodeError:
-                tool_args = {}
+            tool_name, tool_args = parsed
 
             tool = self.tools.get(tool_name)
             if not tool:
@@ -118,6 +145,9 @@ class AgentLoop:
                     status = "error"
 
             result_str = json.dumps(tool_result)
+            formatted = _format_tool_result(tool_name, tool_result)
+            last_tool_result = formatted
+
             steps.append({
                 "tool": tool_name,
                 "args": tool_args,
@@ -125,7 +155,6 @@ class AgentLoop:
                 "status": status,
             })
 
-            formatted = _format_tool_result(tool_name, tool_result)
             clean_assistant = TOOL_CALL_PATTERN.sub("", content).strip()
             if clean_assistant:
                 working_messages.append({"role": "assistant", "content": clean_assistant})
@@ -135,7 +164,7 @@ class AgentLoop:
             })
 
         return {
-            "content": "I was unable to complete the request within the tool call limit.",
+            "content": last_tool_result or "I was unable to complete the request.",
             "tools_used": tools_used,
             "steps": steps,
             "input_tokens": total_input,
