@@ -28,12 +28,12 @@ git checkout claude/kind-curie-gr779t
 # Create model directory
 mkdir -p runtime/model/weights
 
-# Download Qwen2.5-1.5B-Instruct Q4_K_M
-MODEL_FILE="runtime/model/weights/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+# Download Qwen2.5-3B-Instruct Q4_K_M
+MODEL_FILE="runtime/model/weights/qwen2.5-3b-instruct-q4_k_m.gguf"
 if [ ! -f "$MODEL_FILE" ]; then
-    echo "Downloading Qwen2.5-1.5B-Instruct Q4_K_M (~1GB)..."
+    echo "Downloading Qwen2.5-3B-Instruct Q4_K_M (~2GB)..."
     wget -O "$MODEL_FILE" \
-        "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+        "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
     echo "Model downloaded."
 else
     echo "Model already present."
