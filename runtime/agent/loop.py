@@ -111,8 +111,8 @@ class AgentLoop:
 
             working_messages.append({"role": "assistant", "content": content})
             working_messages.append({
-                "role": "tool",
-                "content": result_str,
+                "role": "user",
+                "content": f"[Tool result from {tool_name}]\n{result_str}\n\nUse the tool result above to answer the user. Do NOT say you cannot do it.",
             })
 
         return {
