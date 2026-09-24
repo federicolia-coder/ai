@@ -33,45 +33,6 @@ function IconDelete() {
   );
 }
 
-function IconDashboard() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="5" height="5" rx="1" />
-      <rect x="9" y="2" width="5" height="5" rx="1" />
-      <rect x="2" y="9" width="5" height="5" rx="1" />
-      <rect x="9" y="9" width="5" height="5" rx="1" />
-    </svg>
-  );
-}
-
-function IconPlugin() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="10" height="10" rx="2" />
-      <circle cx="8" cy="8" r="2" />
-    </svg>
-  );
-}
-
-function IconSettings() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <circle cx="8" cy="8" r="2.5" />
-      <path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M3.8 12.2l1.4-1.4M10.8 5.2l1.4-1.4" />
-    </svg>
-  );
-}
-
-function IconLogout() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3" />
-      <path d="M10 11l3-3-3-3" />
-      <path d="M13 8H6" />
-    </svg>
-  );
-}
-
 export function Sidebar() {
   const router = useRouter();
   const {
@@ -208,16 +169,14 @@ export function Sidebar() {
         style={{ borderColor: "var(--color-border-light)" }}
       >
         <div className="flex items-center gap-2">
-          <div style={{ animation: "wiggle 3s ease-in-out infinite" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
-              <circle cx="8" cy="10" r="2" fill="white" />
-              <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
-              <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="6" cy="14" r="1.5" fill="var(--color-rose)" opacity="0.2" />
-              <circle cx="18" cy="14" r="1.5" fill="var(--color-rose)" opacity="0.2" />
-            </svg>
-          </div>
+          <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
+            <circle cx="11" cy="14" r="2.5" fill="white" />
+            <circle cx="11.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+            <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
+            <circle cx="21.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+            <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          </svg>
           <span className="text-sm font-semibold tracking-tight">Tarry</span>
         </div>
         <button
@@ -309,15 +268,6 @@ export function Sidebar() {
         ))}
         {filtered.length === 0 && (
           <div className="px-3 py-6 text-center">
-            <div className="inline-block" style={{ animation: "float 4s ease-in-out infinite" }}>
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="mx-auto mb-2">
-                <circle cx="16" cy="16" r="12" fill="var(--color-accent)" opacity="0.12" />
-                <circle cx="16" cy="16" r="7" fill="var(--color-accent)" opacity="0.2" />
-                <circle cx="13" cy="15" r="1" fill="var(--color-accent)" />
-                <circle cx="19" cy="15" r="1" fill="var(--color-violet)" />
-                <path d="M13 19c1.5 1.5 4.5 1.5 6 0" stroke="var(--color-accent)" strokeWidth="1" strokeLinecap="round" />
-              </svg>
-            </div>
             <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
               Nessuna conversazione
             </p>
@@ -334,32 +284,41 @@ export function Sidebar() {
           onClick={() => router.push("/chat")}
           className="btn-ghost w-full justify-start text-xs gap-2"
         >
-          <span style={{ color: "var(--color-accent-text)" }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 3V3z" />
-            </svg>
-          </span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 3V3z" />
+          </svg>
           Chat
         </button>
         <button
           onClick={() => router.push("/dashboard")}
           className="btn-ghost w-full justify-start text-xs gap-2"
         >
-          <span style={{ color: "var(--color-teal)" }}><IconDashboard /></span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="2" width="5" height="5" rx="1" />
+            <rect x="9" y="2" width="5" height="5" rx="1" />
+            <rect x="2" y="9" width="5" height="5" rx="1" />
+            <rect x="9" y="9" width="5" height="5" rx="1" />
+          </svg>
           Dashboard
         </button>
         <button
           onClick={() => router.push("/plugins")}
           className="btn-ghost w-full justify-start text-xs gap-2"
         >
-          <span style={{ color: "var(--color-violet)" }}><IconPlugin /></span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="10" height="10" rx="2" />
+            <circle cx="8" cy="8" r="2" />
+          </svg>
           Plugin
         </button>
         <button
           onClick={() => router.push("/settings")}
           className="btn-ghost w-full justify-start text-xs gap-2"
         >
-          <span style={{ color: "var(--color-amber)" }}><IconSettings /></span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <circle cx="8" cy="8" r="2.5" />
+            <path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M3.8 12.2l1.4-1.4M10.8 5.2l1.4-1.4" />
+          </svg>
           Impostazioni
         </button>
         <ThemeToggle />
@@ -368,7 +327,11 @@ export function Sidebar() {
           className="btn-ghost w-full justify-start text-xs gap-2"
           style={{ color: "var(--color-rose)" }}
         >
-          <IconLogout />
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3" />
+            <path d="M10 11l3-3-3-3" />
+            <path d="M13 8H6" />
+          </svg>
           Esci
         </button>
       </div>

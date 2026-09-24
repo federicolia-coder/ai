@@ -73,37 +73,26 @@ export default function PluginsPage() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-accent)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
-          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-violet)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
-          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-teal)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
         </div>
       </div>
     );
   }
 
-  const pluginColors = ["var(--color-violet)", "var(--color-teal)", "var(--color-accent)", "var(--color-rose)", "var(--color-amber)", "var(--color-lime)"];
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: "var(--color-violet)" }}>
-            <rect x="4" y="4" width="16" height="16" rx="4" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.3" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-          <h1 className="text-xl font-semibold">Plugin</h1>
-        </div>
+        <h1 className="text-xl font-semibold mb-6">Plugin</h1>
 
         <div className="space-y-3">
-          {plugins.map((p, i) => (
+          {plugins.map((p) => (
             <div key={p.id} className="card">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className="inline-block h-2 w-2 rounded-sm shrink-0"
-                      style={{ background: pluginColors[i % pluginColors.length] }}
-                    />
                     <h3 className="text-sm font-medium">{p.name}</h3>
                     <span
                       className="text-xs"
@@ -134,7 +123,7 @@ export default function PluginsPage() {
                   className="shrink-0 ml-4 relative w-9 h-5 rounded-lg transition-colors"
                   style={{
                     background: p.userEnabled
-                      ? pluginColors[i % pluginColors.length]
+                      ? "var(--color-accent)"
                       : "var(--color-bg-tertiary)",
                   }}
                 >

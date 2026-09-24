@@ -35,46 +35,19 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center px-4 relative overflow-hidden"
+      className="flex min-h-screen items-center justify-center px-4"
       style={{ background: "var(--color-bg)" }}
     >
-      {/* Decorative shapes */}
-      <svg className="absolute top-12 left-12 opacity-10" width="120" height="120" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r="55" fill="var(--color-accent)" />
-      </svg>
-      <svg className="absolute bottom-16 right-16 opacity-10" width="80" height="80" viewBox="0 0 80 80">
-        <rect x="10" y="10" width="60" height="60" rx="16" fill="var(--color-violet)" />
-      </svg>
-      <svg className="absolute top-1/3 right-1/4 opacity-8" width="40" height="40" viewBox="0 0 40 40">
-        <polygon points="20,4 36,34 4,34" fill="var(--color-teal)" opacity="0.15" />
-      </svg>
-
-      <div className="w-full max-w-sm relative">
-        <div className="flex justify-center mb-4">
-          <div className="relative" style={{ animation: "bounce-gentle 3s ease-in-out infinite" }}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="20" fill="var(--color-accent)" opacity="0.1" />
-              <circle cx="24" cy="24" r="14" fill="var(--color-accent)" />
-              {/* Blush cheeks */}
-              <circle cx="15" cy="28" r="2" fill="var(--color-rose)" opacity="0.25" />
-              <circle cx="33" cy="28" r="2" fill="var(--color-rose)" opacity="0.25" />
-              {/* Eyes with shine */}
-              <g style={{ transformOrigin: "19px 22px", animation: "blink 4s ease-in-out infinite" }}>
-                <circle cx="19" cy="22" r="2.5" fill="white" />
-                <circle cx="19.8" cy="21.5" r="0.7" fill="white" opacity="0.8" />
-              </g>
-              <g style={{ transformOrigin: "29px 22px", animation: "blink 4s ease-in-out infinite 0.3s" }}>
-                <circle cx="29" cy="22" r="2.5" fill="var(--color-violet)" />
-                <circle cx="29.8" cy="21.5" r="0.7" fill="white" opacity="0.8" />
-              </g>
-              {/* Big smile */}
-              <path d="M18 30c3 3 9 3 12 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            {/* Sparkle */}
-            <svg width="8" height="8" viewBox="0 0 8 8" className="absolute -right-2 top-0" style={{ animation: "sparkle 2s ease-in-out infinite" }}>
-              <path d="M4 0L5 3L8 4L5 5L4 8L3 5L0 4L3 3Z" fill="var(--color-amber)" />
-            </svg>
-          </div>
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-6">
+          <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
+            <circle cx="11" cy="14" r="2.5" fill="white" />
+            <circle cx="11.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+            <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
+            <circle cx="21.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+            <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </div>
         <h1 className="text-2xl font-bold text-center mb-1">Bentornato</h1>
         <p

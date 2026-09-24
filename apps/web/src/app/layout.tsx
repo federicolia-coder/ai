@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tarry — Your AI, beyond the chat",
+  title: "Tarry — AI Assistant by TestardStudios",
   description:
-    "A lightweight AI assistant that uses tools, plugins, web, files, and APIs. By TestardStudios.",
+    "Un assistente AI leggero con strumenti, plugin e ricerca web. Di TestardStudios.",
 };
 
 export default function RootLayout({
@@ -13,8 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="it" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('tarry-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})()`,

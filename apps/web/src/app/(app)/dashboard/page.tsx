@@ -50,9 +50,9 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-accent)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
-          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-violet)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
-          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-teal)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
         </div>
       </div>
     );
@@ -65,15 +65,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: "var(--color-teal)" }}>
-            <rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="1.5" />
-            <rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="1.5" />
-            <rect x="14" y="14" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-          <h1 className="text-xl font-semibold">Dashboard</h1>
-        </div>
+        <h1 className="text-xl font-semibold mb-6">Dashboard</h1>
 
         {/* Usage card */}
         <div className="card mb-4">
@@ -152,20 +144,12 @@ export default function DashboardPage() {
             </p>
           ) : (
             <ul className="space-y-2">
-              {recentConversations.map((c, i) => {
-                const colors = ["var(--color-accent)", "var(--color-violet)", "var(--color-teal)", "var(--color-rose)", "var(--color-amber)"];
-                return (
+              {recentConversations.map((c) => (
                   <li
                     key={c.id}
                     className="flex items-center justify-between text-sm"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="inline-block h-1.5 w-1.5 rounded-sm shrink-0"
-                        style={{ background: colors[i % colors.length] }}
-                      />
-                      <span className="truncate">{c.title}</span>
-                    </div>
+                    <span className="truncate min-w-0">{c.title}</span>
                     <span
                       className="shrink-0 text-xs ml-2"
                       style={{ color: "var(--color-text-tertiary)" }}
@@ -173,8 +157,7 @@ export default function DashboardPage() {
                       {new Date(c.updated_at).toLocaleDateString("it-IT")}
                     </span>
                   </li>
-                );
-              })}
+              ))}
             </ul>
           )}
         </div>

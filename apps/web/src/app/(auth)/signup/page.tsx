@@ -41,10 +41,14 @@ export default function SignupPage() {
         style={{ background: "var(--color-bg)" }}
       >
         <div className="w-full max-w-sm text-center">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mx-auto mb-4">
-            <circle cx="24" cy="24" r="20" fill="var(--color-teal)" opacity="0.15" />
-            <path d="M16 24l5 5 11-12" stroke="var(--color-teal)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <div
+            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+            style={{ background: "var(--color-teal-soft)" }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12l5 5 9-10" />
+            </svg>
+          </div>
           <h1 className="text-2xl font-bold mb-2">Controlla la tua email</h1>
           <p
             className="text-sm"
@@ -66,49 +70,19 @@ export default function SignupPage() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center px-4 relative overflow-hidden"
+      className="flex min-h-screen items-center justify-center px-4"
       style={{ background: "var(--color-bg)" }}
     >
-      {/* Decorative shapes */}
-      <svg className="absolute top-16 right-12 opacity-10" width="100" height="100" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" fill="var(--color-violet)" />
-      </svg>
-      <svg className="absolute bottom-20 left-16 opacity-10" width="70" height="70" viewBox="0 0 70 70">
-        <rect x="8" y="8" width="54" height="54" rx="14" fill="var(--color-teal)" />
-      </svg>
-      <svg className="absolute top-1/4 left-1/4 opacity-8" width="30" height="30" viewBox="0 0 30 30">
-        <circle cx="15" cy="15" r="12" fill="var(--color-amber)" opacity="0.15" />
-      </svg>
-
-      <div className="w-full max-w-sm relative">
-        <div className="flex justify-center mb-4">
-          <div className="relative" style={{ animation: "bounce-gentle 3s ease-in-out infinite" }}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="20" fill="var(--color-violet)" opacity="0.1" />
-              <circle cx="24" cy="24" r="14" fill="var(--color-violet)" />
-              {/* Blush cheeks */}
-              <circle cx="15" cy="28" r="2" fill="var(--color-rose)" opacity="0.25" />
-              <circle cx="33" cy="28" r="2" fill="var(--color-rose)" opacity="0.25" />
-              {/* Eyes with shine */}
-              <g style={{ transformOrigin: "19px 22px", animation: "blink 4s ease-in-out infinite" }}>
-                <circle cx="19" cy="22" r="2.5" fill="white" />
-                <circle cx="19.8" cy="21.5" r="0.7" fill="white" opacity="0.8" />
-              </g>
-              <g style={{ transformOrigin: "29px 22px", animation: "blink 4s ease-in-out infinite 0.3s" }}>
-                <circle cx="29" cy="22" r="2.5" fill="var(--color-teal)" />
-                <circle cx="29.8" cy="21.5" r="0.7" fill="white" opacity="0.8" />
-              </g>
-              {/* Big smile */}
-              <path d="M18 30c3 3 9 3 12 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            {/* Waving hand */}
-            <svg width="14" height="14" viewBox="0 0 14 14" className="absolute -right-1 top-0" style={{ animation: "wave 2s ease-in-out infinite" }}>
-              <text x="1" y="12" fontSize="11">✨</text>
-            </svg>
-            <svg width="6" height="6" viewBox="0 0 6 6" className="absolute -left-2 top-3" style={{ animation: "sparkle 2s ease-in-out infinite 0.5s" }}>
-              <path d="M3 0L3.8 2.2L6 3L3.8 3.8L3 6L2.2 3.8L0 3L2.2 2.2Z" fill="var(--color-teal)" />
-            </svg>
-          </div>
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-6">
+          <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
+            <circle cx="11" cy="14" r="2.5" fill="white" />
+            <circle cx="11.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+            <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
+            <circle cx="21.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+            <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </div>
         <h1 className="text-2xl font-bold text-center mb-1">Crea il tuo account</h1>
         <p

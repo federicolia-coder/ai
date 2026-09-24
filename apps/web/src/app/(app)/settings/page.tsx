@@ -175,22 +175,16 @@ function SettingsContent() {
   }
 
   const tabs = [
-    { key: "account" as const, label: "Account", color: "var(--color-accent-text)" },
-    { key: "subscription" as const, label: "Abbonamento", color: "var(--color-violet)" },
-    { key: "usage" as const, label: "Utilizzo", color: "var(--color-teal)" },
-    { key: "api_keys" as const, label: "API Keys", color: "var(--color-amber)" },
+    { key: "account" as const, label: "Account" },
+    { key: "subscription" as const, label: "Abbonamento" },
+    { key: "usage" as const, label: "Utilizzo" },
+    { key: "api_keys" as const, label: "API Keys" },
   ];
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: "var(--color-amber)" }}>
-            <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <h1 className="text-xl font-semibold">Impostazioni</h1>
-        </div>
+        <h1 className="text-xl font-semibold mb-6">Impostazioni</h1>
 
         {checkoutMessage && (
           <div
@@ -220,7 +214,7 @@ function SettingsContent() {
                   tab === t.key ? "var(--color-bg)" : "transparent",
                 color:
                   tab === t.key
-                    ? t.color
+                    ? "var(--color-text)"
                     : "var(--color-text-secondary)",
                 boxShadow:
                   tab === t.key ? "0 1px 2px rgba(0,0,0,0.05)" : "none",

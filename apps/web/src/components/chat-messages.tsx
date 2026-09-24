@@ -86,7 +86,7 @@ function StepCard({ step }: { step: ToolStep }) {
         <span
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded"
           style={{
-            background: step.status === "ok" ? "var(--color-teal-soft, rgba(45,212,191,0.1))" : "var(--color-rose-soft, rgba(244,63,94,0.1))",
+            background: step.status === "ok" ? "var(--color-teal-soft)" : "var(--color-rose-soft)",
             color: step.status === "ok" ? "var(--color-teal)" : "var(--color-rose)",
           }}
         >
@@ -176,7 +176,7 @@ function Avatar({ role }: { role: string }) {
     return (
       <div
         className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium"
-        style={{ background: "var(--color-violet-soft)", color: "var(--color-violet)" }}
+        style={{ background: "var(--color-bg-tertiary)", color: "var(--color-text-secondary)" }}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
           <circle cx="7" cy="5" r="2.5" />
@@ -187,14 +187,14 @@ function Avatar({ role }: { role: string }) {
   }
   return (
     <div
-      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium"
-      style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-text)" }}
+      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+      style={{ background: "var(--color-accent-soft)" }}
     >
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="5" cy="6" r="1" fill="currentColor" />
-        <circle cx="9" cy="6" r="1" fill="currentColor" />
-        <path d="M5 9.5c1 1 3 1 4 0" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+      <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
+        <circle cx="11" cy="14" r="2.5" fill="white" />
+        <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
+        <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -219,31 +219,14 @@ export function ChatMessages() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
-          <div className="relative inline-block mx-auto mb-4" style={{ animation: "bounce-gentle 3s ease-in-out infinite" }}>
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <circle cx="32" cy="32" r="26" fill="var(--color-accent)" opacity="0.1" />
-              <circle cx="32" cy="32" r="18" fill="var(--color-accent)" opacity="0.15" />
-              <circle cx="32" cy="32" r="12" fill="var(--color-accent)" />
-              <circle cx="24" cy="35" r="2.5" fill="var(--color-rose)" opacity="0.25" />
-              <circle cx="40" cy="35" r="2.5" fill="var(--color-rose)" opacity="0.25" />
-              <g style={{ transformOrigin: "27px 30px", animation: "blink 4s ease-in-out infinite" }}>
-                <circle cx="27" cy="30" r="2" fill="white" />
-                <circle cx="27.5" cy="29.5" r="0.6" fill="white" opacity="0.8" />
-              </g>
-              <g style={{ transformOrigin: "37px 30px", animation: "blink 4s ease-in-out infinite 0.3s" }}>
-                <circle cx="37" cy="30" r="2" fill="var(--color-violet)" />
-                <circle cx="37.5" cy="29.5" r="0.6" fill="white" opacity="0.8" />
-              </g>
-              <path d="M27 36c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="absolute -right-1 top-1" style={{ animation: "wave 2s ease-in-out infinite" }}>
-              <text x="2" y="13" fontSize="12">👋</text>
-            </svg>
-            <svg width="8" height="8" viewBox="0 0 8 8" className="absolute -left-2 top-2" style={{ animation: "sparkle 2s ease-in-out infinite" }}>
-              <path d="M4 0L5 3L8 4L5 5L4 8L3 5L0 4L3 3Z" fill="var(--color-amber)" />
-            </svg>
-            <svg width="6" height="6" viewBox="0 0 6 6" className="absolute -right-3 bottom-4" style={{ animation: "sparkle 2s ease-in-out infinite 0.7s" }}>
-              <path d="M3 0L3.8 2.2L6 3L3.8 3.8L3 6L2.2 3.8L0 3L2.2 2.2Z" fill="var(--color-teal)" />
+          <div className="mx-auto mb-4">
+            <svg width="48" height="48" viewBox="0 0 32 32" fill="none" className="mx-auto">
+              <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
+              <circle cx="11" cy="14" r="2.5" fill="white" />
+              <circle cx="11.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+              <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
+              <circle cx="21.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
+              <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
           <h2 className="text-lg font-semibold mb-1">Ciao!</h2>
@@ -305,25 +288,25 @@ export function ChatMessages() {
               >
                 Tarry
               </p>
-              <div className="flex items-center gap-1 h-5">
+              <div className="flex items-center gap-1.5 h-5">
                 <span
-                  className="inline-block h-1.5 w-6 rounded-sm"
+                  className="inline-block h-1.5 w-1.5 rounded-full"
                   style={{
-                    background: "var(--color-accent)",
+                    background: "var(--color-text-tertiary)",
                     animation: "pulse-soft 1.4s ease-in-out infinite",
                   }}
                 />
                 <span
-                  className="inline-block h-1.5 w-4 rounded-sm"
+                  className="inline-block h-1.5 w-1.5 rounded-full"
                   style={{
-                    background: "var(--color-violet)",
+                    background: "var(--color-text-tertiary)",
                     animation: "pulse-soft 1.4s ease-in-out infinite 0.2s",
                   }}
                 />
                 <span
-                  className="inline-block h-1.5 w-2 rounded-sm"
+                  className="inline-block h-1.5 w-1.5 rounded-full"
                   style={{
-                    background: "var(--color-teal)",
+                    background: "var(--color-text-tertiary)",
                     animation: "pulse-soft 1.4s ease-in-out infinite 0.4s",
                   }}
                 />
