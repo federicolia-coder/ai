@@ -84,7 +84,7 @@ export default function SignupPage() {
             <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-center mb-1">Crea il tuo account</h1>
+        <h1 className="text-2xl font-bold text-center mb-1" style={{ textWrap: "balance" }}>Crea il tuo account</h1>
         <p
           className="text-center text-sm mb-8"
           style={{ color: "var(--color-text-secondary)" }}

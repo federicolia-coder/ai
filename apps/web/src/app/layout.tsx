@@ -4,7 +4,18 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Tarry — AI Assistant by TestardStudios",
   description:
-    "Un assistente AI leggero con strumenti, plugin e ricerca web. Di TestardStudios.",
+    "Un assistente AI con strumenti, plugin e ricerca web. Leggero, estensibile, tuo.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  openGraph: {
+    title: "Tarry — AI Assistant by TestardStudios",
+    description:
+      "Un assistente AI con strumenti, plugin e ricerca web. Leggero, estensibile, tuo.",
+    siteName: "Tarry AI",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
