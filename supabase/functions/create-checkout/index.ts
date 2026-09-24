@@ -26,7 +26,11 @@ async function stripeRequest(
     },
     body: new URLSearchParams(body).toString(),
   });
-  return resp.json();
+  const data = await resp.json();
+  if (data.error) {
+    throw new Error(`Stripe ${endpoint}: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+  return data;
 }
 
 Deno.serve(async (req: Request) => {
@@ -35,6 +39,16 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    if (!STRIPE_SECRET_KEY) {
+      return new Response(
+        JSON.stringify({ error: "Stripe non configurato" }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -63,9 +77,10 @@ Deno.serve(async (req: Request) => {
 
     const { plan } = await req.json();
 
-    if (!plan || !PRICE_IDS[plan]) {
+    const priceId = plan ? PRICE_IDS[plan] : "";
+    if (!priceId) {
       return new Response(
-        JSON.stringify({ error: "Invalid plan. Use 'plus' or 'pro'." }),
+        JSON.stringify({ error: "Piano non valido o prezzo non configurato" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,19 +117,31 @@ Deno.serve(async (req: Request) => {
     const session = await stripeRequest("/checkout/sessions", {
       customer: customerId,
       mode: "subscription",
-      "line_items[0][price]": PRICE_IDS[plan],
+      "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
       success_url: `${APP_URL}/settings?checkout=success`,
       cancel_url: `${APP_URL}/settings?checkout=cancel`,
       "metadata[user_id]": user.id,
     });
 
+    if (!session.url) {
+      console.error("Stripe session missing url:", JSON.stringify(session));
+      return new Response(
+        JSON.stringify({ error: "Checkout session non valida" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("Checkout error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
