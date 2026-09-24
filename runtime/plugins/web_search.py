@@ -1,5 +1,7 @@
 import os
+import re
 from typing import Any
+from urllib.parse import quote_plus
 
 import httpx
 
@@ -36,13 +38,10 @@ class WebSearchTool(Tool):
         query = params.get("query", "")
         count = min(params.get("count", 3), 5)
 
-        if not WEB_SEARCH_API_KEY:
-            return {"error": "Web search not configured", "results": []}
-
         try:
-            if WEB_SEARCH_PROVIDER == "brave":
+            if WEB_SEARCH_API_KEY and WEB_SEARCH_PROVIDER == "brave":
                 return await self._brave_search(query, count)
-            return {"error": f"Unknown provider: {WEB_SEARCH_PROVIDER}", "results": []}
+            return await self._ddg_search(query, count)
         except Exception as e:
             return {"error": str(e), "results": []}
 
@@ -66,5 +65,32 @@ class WebSearchTool(Tool):
                     "url": item.get("url", ""),
                     "snippet": item.get("description", ""),
                 })
+
+            return {"query": query, "results": results}
+
+    async def _ddg_search(self, query: str, count: int) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            response = await client.get(
+                "https://html.duckduckgo.com/html/",
+                params={"q": query},
+                headers={"User-Agent": "Tarry/1.0"},
+            )
+            response.raise_for_status()
+            html = response.text
+
+            results = []
+            for match in re.finditer(
+                r'<a[^>]+class="result__a"[^>]+href="([^"]*)"[^>]*>(.*?)</a>'
+                r'.*?<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
+                html,
+                re.DOTALL,
+            ):
+                url = match.group(1)
+                title = re.sub(r"<[^>]+>", "", match.group(2)).strip()
+                snippet = re.sub(r"<[^>]+>", "", match.group(3)).strip()
+                if url and title:
+                    results.append({"title": title, "url": url, "snippet": snippet})
+                if len(results) >= count:
+                    break
 
             return {"query": query, "results": results}
