@@ -15,13 +15,29 @@ TOOL_CALL_PATTERN = re.compile(
     re.DOTALL,
 )
 
-TOOL_SYSTEM_PROMPT = """You have tools. To use one, write EXACTLY this format (no extra text around it):
+TOOL_SYSTEM_PROMPT = """You have tools. To use one, write EXACTLY:
 <tool_call>{"name": "tool_name", "arguments": {"param": "value"}}</tool_call>
 
-Use a tool ONLY when needed. After getting the tool result, give your final answer to the user.
+When you receive a tool result, summarize it naturally for the user.
 
 Available tools:
 """
+
+
+def _format_tool_result(tool_name: str, result: dict) -> str:
+    if "error" in result:
+        return f"Error: {result['error']}"
+    if tool_name == "search":
+        results = result.get("results", [])
+        if not results:
+            return "No results found."
+        lines = []
+        for r in results:
+            lines.append(f"- {r.get('title', '')}: {r.get('snippet', '')}")
+        return "\n".join(lines)
+    if tool_name == "calculate":
+        return f"Result: {result.get('result', 'unknown')}"
+    return json.dumps(result)[:400]
 
 
 class AgentLoop:
@@ -109,10 +125,13 @@ class AgentLoop:
                 "status": status,
             })
 
-            working_messages.append({"role": "assistant", "content": content})
+            formatted = _format_tool_result(tool_name, tool_result)
+            clean_assistant = TOOL_CALL_PATTERN.sub("", content).strip()
+            if clean_assistant:
+                working_messages.append({"role": "assistant", "content": clean_assistant})
             working_messages.append({
                 "role": "user",
-                "content": f"[Tool result from {tool_name}]\n{result_str}\n\nUse the tool result above to answer the user. Do NOT say you cannot do it.",
+                "content": f"Here is the information I found:\n{formatted}\n\nSummarize this for me.",
             })
 
         return {
