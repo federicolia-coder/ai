@@ -118,11 +118,13 @@ export function Sidebar() {
       setConversations([data as Conversation, ...conversations]);
       setCurrentConversation(data.id as string);
       setMessages([]);
+      router.push("/chat");
     }
   }
 
   async function selectConversation(id: string) {
     setCurrentConversation(id);
+    router.push("/chat");
 
     const supabase = createClient();
     const { data } = await supabase
@@ -328,6 +330,17 @@ export function Sidebar() {
         className="border-t px-3 py-3 space-y-0.5"
         style={{ borderColor: "var(--color-border-light)" }}
       >
+        <button
+          onClick={() => router.push("/chat")}
+          className="btn-ghost w-full justify-start text-xs gap-2"
+        >
+          <span style={{ color: "var(--color-accent-text)" }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 3V3z" />
+            </svg>
+          </span>
+          Chat
+        </button>
         <button
           onClick={() => router.push("/dashboard")}
           className="btn-ghost w-full justify-start text-xs gap-2"

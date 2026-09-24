@@ -354,16 +354,23 @@ export default function LandingPage() {
           borderColor: "var(--color-border-light)",
         }}
       >
-        <div className="flex items-center justify-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
-            <circle cx="8" cy="10" r="2" fill="white" />
-            <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
-            <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <span className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
-            Tarry AI &mdash; by TestardStudios
-          </span>
+        <div className="mx-auto max-w-4xl flex flex-col items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+            <Link href="/legal/terms" className="hover:underline">Condizioni d&apos;uso</Link>
+            <Link href="/legal/privacy" className="hover:underline">Privacy</Link>
+            <Link href="/legal/cookies" className="hover:underline">Cookie</Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
+              <circle cx="8" cy="10" r="2" fill="white" />
+              <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
+              <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+              Tarry AI &mdash; TestardStudios &copy; {new Date().getFullYear()}
+            </span>
+          </div>
         </div>
       </footer>
     </div>
