@@ -143,7 +143,7 @@ Deno.serve(async (req: Request) => {
       .select("role, content")
       .eq("conversation_id", conversation_id)
       .order("created_at", { ascending: true })
-      .limit(20);
+      .limit(10);
 
     // Load user's enabled plugins
     const { data: userPlugins } = await supabase
@@ -190,7 +190,7 @@ Deno.serve(async (req: Request) => {
           {
             role: "system",
             content:
-              "You are Tarry, an AI assistant by TestardStudios. You are helpful, concise, and accurate. You can use tools when needed to answer questions better.",
+              "You are Tarry, a helpful AI assistant. Answer concisely and accurately. Respond in the same language as the user.",
           },
           ...(history || []).map((m: any) => ({
             role: m.role,

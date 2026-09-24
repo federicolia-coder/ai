@@ -15,12 +15,10 @@ TOOL_CALL_PATTERN = re.compile(
     re.DOTALL,
 )
 
-TOOL_SYSTEM_PROMPT = """You have access to the following tools. To use a tool, output a tool call in this exact format:
+TOOL_SYSTEM_PROMPT = """You can use tools with this format:
 <tool_call>{"name": "tool_name", "arguments": {"param": "value"}}</tool_call>
 
-After using a tool, you will receive the result and can use it to formulate your final answer.
-
-Available tools:
+Tools:
 """
 
 
@@ -46,7 +44,6 @@ class AgentLoop:
             tool_desc = TOOL_SYSTEM_PROMPT
             for td in tool_defs:
                 tool_desc += f"\n- {td['name']}: {td['description']}"
-                tool_desc += f"\n  Parameters: {json.dumps(td['parameters'])}"
 
             if working_messages and working_messages[0]["role"] == "system":
                 working_messages[0]["content"] += "\n\n" + tool_desc
@@ -57,6 +54,7 @@ class AgentLoop:
             result = self.model.generate(
                 messages=working_messages,
                 max_tokens=max_tokens,
+                temperature=0.3,
             )
 
             total_input += result.get("input_tokens", 0)
