@@ -18,3 +18,4 @@ model/weights/
 *.safetensors
 coverage/
 .turbo/
+*.tsbuildinfo
