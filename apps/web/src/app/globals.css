@@ -12,9 +12,10 @@
     --color-text-tertiary: #a8a29e;
     --color-border: #e7e5e4;
     --color-border-light: #f0eeec;
-    --color-accent: #f06730;
-    --color-accent-hover: #e05520;
-    --color-accent-soft: #fff1eb;
+    --color-accent: #eab308;
+    --color-accent-hover: #ca8a04;
+    --color-accent-text: #a16207;
+    --color-accent-soft: #fefce8;
     --color-violet: #8b5cf6;
     --color-violet-soft: #f3efff;
     --color-teal: #0d9488;
@@ -36,9 +37,10 @@
     --color-text-tertiary: #6b6462;
     --color-border: #302d31;
     --color-border-light: #252326;
-    --color-accent: #f2854e;
-    --color-accent-hover: #f59a6a;
-    --color-accent-soft: #2a1a10;
+    --color-accent: #facc15;
+    --color-accent-hover: #fde047;
+    --color-accent-text: #facc15;
+    --color-accent-soft: #291f03;
     --color-violet: #a78bfa;
     --color-violet-soft: #1e1530;
     --color-teal: #2dd4bf;
@@ -69,8 +71,9 @@
   }
 
   .btn-primary {
-    @apply btn text-white;
+    @apply btn;
     background: var(--color-accent);
+    color: #1c1917;
   }
   .btn-primary:hover {
     background: var(--color-accent-hover);
@@ -138,7 +141,7 @@
     color: var(--color-text-secondary);
   }
   .prose-tarry a {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     @apply underline;
   }
   .prose-tarry table {

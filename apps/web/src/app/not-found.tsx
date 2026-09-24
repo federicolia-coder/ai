@@ -44,7 +44,7 @@ export default function NotFound() {
             <path d="M3 0L3.8 2.2L6 3L3.8 3.8L3 6L2.2 3.8L0 3L2.2 2.2Z" fill="var(--color-violet)" />
           </svg>
         </div>
-        <p className="text-5xl font-bold mb-2" style={{ color: "var(--color-accent)" }}>
+        <p className="text-5xl font-bold mb-2" style={{ color: "var(--color-accent-text)" }}>
           404
         </p>
         <p className="text-base mb-6" style={{ color: "var(--color-text-secondary)" }}>

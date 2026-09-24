@@ -7,7 +7,7 @@ import type { Profile, Subscription, ApiKey, Usage } from "@/types/database";
 
 const PLAN_DETAILS: Record<string, { tokens: string; price: string; color: string }> = {
   free: { tokens: "100K", price: "€0", color: "var(--color-teal)" },
-  plus: { tokens: "2M", price: "€9/mese", color: "var(--color-accent)" },
+  plus: { tokens: "2M", price: "€9/mese", color: "var(--color-accent-text)" },
   pro: { tokens: "10M", price: "€29/mese", color: "var(--color-violet)" },
 };
 
@@ -175,7 +175,7 @@ function SettingsContent() {
   }
 
   const tabs = [
-    { key: "account" as const, label: "Account", color: "var(--color-accent)" },
+    { key: "account" as const, label: "Account", color: "var(--color-accent-text)" },
     { key: "subscription" as const, label: "Abbonamento", color: "var(--color-violet)" },
     { key: "usage" as const, label: "Utilizzo", color: "var(--color-teal)" },
     { key: "api_keys" as const, label: "API Keys", color: "var(--color-amber)" },
@@ -198,7 +198,7 @@ function SettingsContent() {
             style={{
               background: "var(--color-accent-soft)",
               border: "1px solid var(--color-accent)",
-              color: "var(--color-accent)",
+              color: "var(--color-accent-text)",
             }}
           >
             {checkoutMessage}

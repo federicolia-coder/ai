@@ -4,7 +4,7 @@ const features = [
   {
     title: "Tools",
     desc: "Calcolatrice, ricerca web e un sistema di strumenti estensibile per task reali.",
-    color: "var(--color-accent)",
+    color: "var(--color-accent-text)",
     bg: "var(--color-accent-soft)",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -99,7 +99,7 @@ const plans = [
     tokens: "2M",
     price: "9",
     highlight: true,
-    color: "var(--color-accent)",
+    color: "var(--color-accent-text)",
     bg: "var(--color-accent-soft)",
     features: [
       "2.000.000 token/mese",
@@ -214,7 +214,7 @@ export default function LandingPage() {
             </svg>
           </div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            La tua AI, <span style={{ color: "var(--color-accent)" }}>oltre la chat</span>
+            La tua AI, <span style={{ color: "var(--color-accent-text)" }}>oltre la chat</span>
           </h1>
           <p
             className="mt-4 text-lg leading-relaxed"

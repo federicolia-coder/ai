@@ -221,7 +221,7 @@ export function Sidebar() {
         <button
           onClick={createConversation}
           className="inline-flex items-center justify-center rounded-lg px-2 py-1 text-xs font-medium transition-colors"
-          style={{ color: "var(--color-accent)" }}
+          style={{ color: "var(--color-accent-text)" }}
         >
           + Nuova
         </button>
@@ -252,7 +252,7 @@ export function Sidebar() {
                   : "transparent",
               color:
                 currentConversationId === c.id
-                  ? "var(--color-accent)"
+                  ? "var(--color-accent-text)"
                   : "var(--color-text)",
             }}
           >
