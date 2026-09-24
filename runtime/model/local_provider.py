@@ -21,6 +21,7 @@ class LocalModelProvider(ModelProvider):
             n_threads=4,
             n_gpu_layers=0,
             verbose=False,
+            chat_format="chatml",
         )
         logger.info("Model loaded successfully")
 
