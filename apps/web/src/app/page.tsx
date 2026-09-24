@@ -172,15 +172,45 @@ export default function LandingPage() {
         </svg>
 
         <div className="relative">
-          {/* Logo mark */}
-          <div className="mx-auto mb-6 flex items-center justify-center">
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <circle cx="32" cy="32" r="28" fill="var(--color-accent)" />
-              <circle cx="22" cy="26" r="5" fill="white" />
-              <circle cx="42" cy="26" r="5" fill="var(--color-violet)" />
-              <path d="M20 42c6 6 18 6 24 0" stroke="white" strokeWidth="3" strokeLinecap="round" />
-              <circle cx="14" cy="16" r="3" fill="var(--color-teal)" opacity="0.7" />
-              <circle cx="50" cy="18" r="2" fill="var(--color-amber)" opacity="0.7" />
+          {/* Mascot with sparkles */}
+          <div className="mx-auto mb-6 flex items-center justify-center relative" style={{ width: 100, height: 100 }}>
+            {/* Sparkles around mascot */}
+            <svg className="absolute" style={{ top: -4, right: 2, animation: "sparkle 2s ease-in-out infinite" }} width="16" height="16" viewBox="0 0 16 16">
+              <path d="M8 0L9.5 6.5 16 8l-6.5 1.5L8 16l-1.5-6.5L0 8l6.5-1.5z" fill="var(--color-amber)" />
+            </svg>
+            <svg className="absolute" style={{ bottom: 8, left: -2, animation: "sparkle 2s ease-in-out infinite 0.7s" }} width="12" height="12" viewBox="0 0 16 16">
+              <path d="M8 0L9.5 6.5 16 8l-6.5 1.5L8 16l-1.5-6.5L0 8l6.5-1.5z" fill="var(--color-teal)" />
+            </svg>
+            <svg className="absolute" style={{ top: 4, left: 6, animation: "sparkle 2s ease-in-out infinite 1.3s" }} width="10" height="10" viewBox="0 0 16 16">
+              <path d="M8 0L9.5 6.5 16 8l-6.5 1.5L8 16l-1.5-6.5L0 8l6.5-1.5z" fill="var(--color-rose)" />
+            </svg>
+            {/* Main mascot */}
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" style={{ animation: "bounce-gentle 3s ease-in-out infinite" }}>
+              <circle cx="40" cy="42" r="32" fill="var(--color-accent)" />
+              {/* Blush cheeks */}
+              <circle cx="22" cy="46" r="5" fill="var(--color-rose)" opacity="0.25" />
+              <circle cx="58" cy="46" r="5" fill="var(--color-rose)" opacity="0.25" />
+              {/* Eyes with blink */}
+              <g style={{ transformOrigin: "28px 36px", animation: "blink 4s ease-in-out infinite" }}>
+                <circle cx="28" cy="36" r="6" fill="white" />
+                <circle cx="30" cy="35" r="3" fill="#1c1917" />
+                <circle cx="31" cy="33.5" r="1.2" fill="white" />
+              </g>
+              <g style={{ transformOrigin: "52px 36px", animation: "blink 4s ease-in-out infinite 0.1s" }}>
+                <circle cx="52" cy="36" r="6" fill="var(--color-violet)" />
+                <circle cx="54" cy="35" r="3" fill="#1c1917" />
+                <circle cx="55" cy="33.5" r="1.2" fill="white" />
+              </g>
+              {/* Big smile */}
+              <path d="M28 52c6 7 18 7 24 0" stroke="white" strokeWidth="3" strokeLinecap="round" />
+              {/* Little ear/antenna */}
+              <circle cx="18" cy="18" r="4" fill="var(--color-teal)" />
+              <circle cx="62" cy="20" r="3" fill="var(--color-amber)" />
+              {/* Waving hand */}
+              <g style={{ transformOrigin: "68px 50px", animation: "wave 2s ease-in-out infinite" }}>
+                <circle cx="70" cy="50" r="6" fill="var(--color-accent-hover)" />
+                <circle cx="70" cy="50" r="4" fill="var(--color-accent)" />
+              </g>
             </svg>
           </div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">

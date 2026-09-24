@@ -81,14 +81,38 @@ export function ChatMessages() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mx-auto mb-4">
-            <circle cx="24" cy="24" r="20" fill="var(--color-accent)" opacity="0.1" />
-            <circle cx="24" cy="24" r="14" fill="var(--color-accent)" opacity="0.15" />
-            <circle cx="24" cy="24" r="8" fill="var(--color-accent)" />
-            <circle cx="20" cy="22" r="1.5" fill="white" />
-            <circle cx="28" cy="22" r="1.5" fill="var(--color-violet)" />
-            <path d="M20 27c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <div className="relative inline-block mx-auto mb-4" style={{ animation: "bounce-gentle 3s ease-in-out infinite" }}>
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="26" fill="var(--color-accent)" opacity="0.1" />
+              <circle cx="32" cy="32" r="18" fill="var(--color-accent)" opacity="0.15" />
+              <circle cx="32" cy="32" r="12" fill="var(--color-accent)" />
+              {/* Blush cheeks */}
+              <circle cx="24" cy="35" r="2.5" fill="var(--color-rose)" opacity="0.25" />
+              <circle cx="40" cy="35" r="2.5" fill="var(--color-rose)" opacity="0.25" />
+              {/* Eyes with shine */}
+              <g style={{ transformOrigin: "27px 30px", animation: "blink 4s ease-in-out infinite" }}>
+                <circle cx="27" cy="30" r="2" fill="white" />
+                <circle cx="27.5" cy="29.5" r="0.6" fill="white" opacity="0.8" />
+              </g>
+              <g style={{ transformOrigin: "37px 30px", animation: "blink 4s ease-in-out infinite 0.3s" }}>
+                <circle cx="37" cy="30" r="2" fill="var(--color-violet)" />
+                <circle cx="37.5" cy="29.5" r="0.6" fill="white" opacity="0.8" />
+              </g>
+              {/* Big smile */}
+              <path d="M27 36c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            {/* Waving hand */}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="absolute -right-1 top-1" style={{ animation: "wave 2s ease-in-out infinite" }}>
+              <text x="2" y="13" fontSize="12">👋</text>
+            </svg>
+            {/* Sparkles */}
+            <svg width="8" height="8" viewBox="0 0 8 8" className="absolute -left-2 top-2" style={{ animation: "sparkle 2s ease-in-out infinite" }}>
+              <path d="M4 0L5 3L8 4L5 5L4 8L3 5L0 4L3 3Z" fill="var(--color-amber)" />
+            </svg>
+            <svg width="6" height="6" viewBox="0 0 6 6" className="absolute -right-3 bottom-4" style={{ animation: "sparkle 2s ease-in-out infinite 0.7s" }}>
+              <path d="M3 0L3.8 2.2L6 3L3.8 3.8L3 6L2.2 3.8L0 3L2.2 2.2Z" fill="var(--color-teal)" />
+            </svg>
+          </div>
           <h2 className="text-lg font-semibold mb-1">Ciao!</h2>
           <p
             className="text-sm"

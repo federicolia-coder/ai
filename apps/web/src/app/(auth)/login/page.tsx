@@ -51,12 +51,30 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm relative">
         <div className="flex justify-center mb-4">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <circle cx="20" cy="20" r="16" fill="var(--color-accent)" />
-            <circle cx="14" cy="17" r="3" fill="white" />
-            <circle cx="26" cy="17" r="3" fill="var(--color-violet)" />
-            <path d="M13 26c3.5 3.5 10.5 3.5 14 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          <div className="relative" style={{ animation: "bounce-gentle 3s ease-in-out infinite" }}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" fill="var(--color-accent)" opacity="0.1" />
+              <circle cx="24" cy="24" r="14" fill="var(--color-accent)" />
+              {/* Blush cheeks */}
+              <circle cx="15" cy="28" r="2" fill="var(--color-rose)" opacity="0.25" />
+              <circle cx="33" cy="28" r="2" fill="var(--color-rose)" opacity="0.25" />
+              {/* Eyes with shine */}
+              <g style={{ transformOrigin: "19px 22px", animation: "blink 4s ease-in-out infinite" }}>
+                <circle cx="19" cy="22" r="2.5" fill="white" />
+                <circle cx="19.8" cy="21.5" r="0.7" fill="white" opacity="0.8" />
+              </g>
+              <g style={{ transformOrigin: "29px 22px", animation: "blink 4s ease-in-out infinite 0.3s" }}>
+                <circle cx="29" cy="22" r="2.5" fill="var(--color-violet)" />
+                <circle cx="29.8" cy="21.5" r="0.7" fill="white" opacity="0.8" />
+              </g>
+              {/* Big smile */}
+              <path d="M18 30c3 3 9 3 12 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            {/* Sparkle */}
+            <svg width="8" height="8" viewBox="0 0 8 8" className="absolute -right-2 top-0" style={{ animation: "sparkle 2s ease-in-out infinite" }}>
+              <path d="M4 0L5 3L8 4L5 5L4 8L3 5L0 4L3 3Z" fill="var(--color-amber)" />
+            </svg>
+          </div>
         </div>
         <h1 className="text-2xl font-bold text-center mb-1">Bentornato</h1>
         <p

@@ -206,12 +206,16 @@ export function Sidebar() {
         style={{ borderColor: "var(--color-border-light)" }}
       >
         <div className="flex items-center gap-2">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
-            <circle cx="8" cy="10" r="2" fill="white" />
-            <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
-            <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <div style={{ animation: "wiggle 3s ease-in-out infinite" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
+              <circle cx="8" cy="10" r="2" fill="white" />
+              <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
+              <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="6" cy="14" r="1.5" fill="var(--color-rose)" opacity="0.2" />
+              <circle cx="18" cy="14" r="1.5" fill="var(--color-rose)" opacity="0.2" />
+            </svg>
+          </div>
           <span className="text-sm font-semibold tracking-tight">Tarry</span>
         </div>
         <button
@@ -302,12 +306,20 @@ export function Sidebar() {
           </div>
         ))}
         {filtered.length === 0 && (
-          <p
-            className="px-3 py-4 text-xs text-center"
-            style={{ color: "var(--color-text-tertiary)" }}
-          >
-            Nessuna conversazione
-          </p>
+          <div className="px-3 py-6 text-center">
+            <div className="inline-block" style={{ animation: "float 4s ease-in-out infinite" }}>
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="mx-auto mb-2">
+                <circle cx="16" cy="16" r="12" fill="var(--color-accent)" opacity="0.12" />
+                <circle cx="16" cy="16" r="7" fill="var(--color-accent)" opacity="0.2" />
+                <circle cx="13" cy="15" r="1" fill="var(--color-accent)" />
+                <circle cx="19" cy="15" r="1" fill="var(--color-violet)" />
+                <path d="M13 19c1.5 1.5 4.5 1.5 6 0" stroke="var(--color-accent)" strokeWidth="1" strokeLinecap="round" />
+              </svg>
+            </div>
+            <p className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+              Nessuna conversazione
+            </p>
+          </div>
         )}
       </div>
 
