@@ -227,6 +227,7 @@ Deno.serve(async (req: Request) => {
       token_count: result.total_tokens || 0,
       metadata: {
         tools_used: result.tools_used || [],
+        steps: result.steps || [],
         input_tokens: result.input_tokens || 0,
         output_tokens: result.output_tokens || 0,
       },
@@ -259,6 +260,7 @@ Deno.serve(async (req: Request) => {
         token_count: totalTokens,
         metadata: {
           tools_used: result.tools_used || [],
+          steps: result.steps || [],
           input_tokens: result.input_tokens || 0,
           output_tokens: result.output_tokens || 0,
         },

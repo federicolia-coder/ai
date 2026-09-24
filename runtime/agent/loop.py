@@ -35,6 +35,7 @@ class AgentLoop:
     ) -> dict[str, Any]:
         tool_defs = self.tools.list_definitions(enabled_tools)
         tools_used: list[str] = []
+        steps: list[dict[str, Any]] = []
         total_input = 0
         total_output = 0
 
@@ -67,6 +68,7 @@ class AgentLoop:
                 return {
                     "content": clean_content or content,
                     "tools_used": tools_used,
+                    "steps": steps,
                     "input_tokens": total_input,
                     "output_tokens": total_output,
                     "total_tokens": total_input + total_output,
@@ -81,6 +83,7 @@ class AgentLoop:
             tool = self.tools.get(tool_name)
             if not tool:
                 tool_result = {"error": f"Unknown tool: {tool_name}"}
+                status = "error"
             else:
                 try:
                     tool_result = await asyncio.wait_for(
@@ -88,20 +91,32 @@ class AgentLoop:
                         timeout=TOOL_TIMEOUT,
                     )
                     tools_used.append(tool_name)
+                    status = "ok"
                 except asyncio.TimeoutError:
                     tool_result = {"error": f"Tool '{tool_name}' timed out"}
+                    status = "error"
                 except Exception as e:
                     tool_result = {"error": f"Tool '{tool_name}' failed: {str(e)}"}
+                    status = "error"
+
+            result_str = json.dumps(tool_result)
+            steps.append({
+                "tool": tool_name,
+                "args": tool_args,
+                "result": result_str[:500],
+                "status": status,
+            })
 
             working_messages.append({"role": "assistant", "content": content})
             working_messages.append({
                 "role": "tool",
-                "content": json.dumps(tool_result),
+                "content": result_str,
             })
 
         return {
             "content": "I was unable to complete the request within the tool call limit.",
             "tools_used": tools_used,
+            "steps": steps,
             "input_tokens": total_input,
             "output_tokens": total_output,
             "total_tokens": total_input + total_output,
