@@ -3,27 +3,85 @@ import Link from "next/link";
 const features = [
   {
     title: "Tools",
-    desc: "Built-in calculator, web search, and extensible tool system for real-world tasks.",
+    desc: "Calcolatrice, ricerca web e un sistema di strumenti estensibile per task reali.",
+    color: "var(--color-accent)",
+    bg: "var(--color-accent-soft)",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect x="4" y="14" width="10" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
+        <rect x="7" y="17" width="4" height="2" rx="0.5" fill="currentColor" opacity="0.5" />
+        <rect x="7" y="21" width="4" height="2" rx="0.5" fill="currentColor" opacity="0.5" />
+        <circle cx="22" cy="12" r="6" stroke="currentColor" strokeWidth="2" />
+        <path d="M26 16L30 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    ),
   },
   {
-    title: "Plugins",
-    desc: "Modular plugin architecture. Install, configure, and extend capabilities on demand.",
+    title: "Plugin",
+    desc: "Architettura modulare a plugin. Installa, configura ed estendi le capacità.",
+    color: "var(--color-violet)",
+    bg: "var(--color-violet-soft)",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <path d="M14 4H8C6 4 4 6 4 8v16c0 2 2 4 4 4h16c2 0 4-2 4-4v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <rect x="17" y="3" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="2" />
+        <circle cx="23" cy="9" r="2" fill="currentColor" opacity="0.5" />
+      </svg>
+    ),
   },
   {
     title: "Web",
-    desc: "Search the web for current information. No knowledge cutoff for what matters.",
+    desc: "Cerca nel web informazioni attuali. Nessun limite temporale.",
+    color: "var(--color-teal)",
+    bg: "var(--color-teal-soft)",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="2" />
+        <ellipse cx="16" cy="16" rx="5" ry="12" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="4" y1="16" x2="28" y2="16" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="7" y1="9" x2="25" y2="9" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+        <line x1="7" y1="23" x2="25" y2="23" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+      </svg>
+    ),
   },
   {
-    title: "Files",
-    desc: "Upload documents, extract content, and use them as context for smarter answers.",
+    title: "File",
+    desc: "Carica documenti, estrai contenuti e usali come contesto.",
+    color: "var(--color-rose)",
+    bg: "var(--color-rose-soft)",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <path d="M8 4h10l8 8v16a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z" stroke="currentColor" strokeWidth="2" />
+        <path d="M18 4v8h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <line x1="10" y1="18" x2="22" y2="18" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+        <line x1="10" y1="22" x2="18" y2="22" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+      </svg>
+    ),
   },
   {
     title: "API",
-    desc: "Integrate Tarry into your workflow with a documented REST API and personal API keys.",
+    desc: "Integra Tarry nel tuo workflow con API REST e chiavi personali.",
+    color: "var(--color-amber)",
+    bg: "var(--color-amber-soft)",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <path d="M10 8L4 16l6 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M22 8l6 8-6 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1="18" y1="6" x2="14" y2="26" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+      </svg>
+    ),
   },
   {
-    title: "Security",
-    desc: "Row-level security, scoped permissions, encrypted secrets. Your data stays yours.",
+    title: "Sicurezza",
+    desc: "Row-level security, permessi granulari, secret cifrati.",
+    color: "var(--color-lime)",
+    bg: "var(--color-lime-soft)",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <path d="M16 3L5 8v8c0 7.5 4.7 14.5 11 17 6.3-2.5 11-9.5 11-17V8L16 3z" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 16l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
   },
 ];
 
@@ -31,32 +89,38 @@ const plans = [
   {
     name: "Free",
     tokens: "100K",
-    price: "€0",
-    features: ["100,000 tokens/month", "Core plugins", "5 conversations"],
+    price: "0",
+    color: "var(--color-teal)",
+    bg: "var(--color-teal-soft)",
+    features: ["100.000 token/mese", "Plugin base", "5 conversazioni"],
   },
   {
     name: "Plus",
     tokens: "2M",
-    price: "€9",
+    price: "9",
     highlight: true,
+    color: "var(--color-accent)",
+    bg: "var(--color-accent-soft)",
     features: [
-      "2,000,000 tokens/month",
-      "All plugins",
-      "Unlimited conversations",
-      "File uploads",
-      "API access",
+      "2.000.000 token/mese",
+      "Tutti i plugin",
+      "Conversazioni illimitate",
+      "Upload file",
+      "Accesso API",
     ],
   },
   {
     name: "Pro",
     tokens: "10M",
-    price: "€29",
+    price: "29",
+    color: "var(--color-violet)",
+    bg: "var(--color-violet-soft)",
     features: [
-      "10,000,000 tokens/month",
-      "All plugins",
-      "Unlimited everything",
-      "Priority support",
-      "Custom integrations",
+      "10.000.000 token/mese",
+      "Tutti i plugin",
+      "Tutto illimitato",
+      "Supporto prioritario",
+      "Integrazioni custom",
     ],
   },
 ];
@@ -69,49 +133,76 @@ export default function LandingPage() {
         className="flex items-center justify-between px-6 py-4 border-b"
         style={{ borderColor: "var(--color-border-light)" }}
       >
-        <span className="text-lg font-semibold tracking-tight">Tarry</span>
+        <div className="flex items-center gap-2">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
+            <circle cx="8" cy="10" r="2" fill="white" />
+            <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
+            <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span className="text-lg font-semibold tracking-tight">Tarry</span>
+        </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="btn-ghost">
             Log in
           </Link>
           <Link href="/signup" className="btn-primary">
-            Get started
+            Inizia gratis
           </Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="mx-auto max-w-2xl px-6 pt-24 pb-20 text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          Tarry
-        </h1>
-        <p
-          className="mt-3 text-lg"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          La tua AI, oltre la chat.
-        </p>
-        <p
-          className="mt-4 text-base leading-relaxed"
-          style={{ color: "var(--color-text-tertiary)" }}
-        >
-          Un assistente AI leggero che può utilizzare strumenti, plugin, web,
-          file e API.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <Link href="/signup" className="btn-primary px-6 py-2.5">
-            Prova Tarry
-          </Link>
-          <a href="#plans" className="btn-secondary px-6 py-2.5">
-            Scopri i piani
-          </a>
+      <section className="relative mx-auto max-w-3xl px-6 pt-24 pb-20 text-center overflow-hidden">
+        {/* Decorative shapes */}
+        <svg className="absolute top-8 left-8 opacity-20" width="60" height="60" viewBox="0 0 60 60" style={{ animation: "float 4s ease-in-out infinite" }}>
+          <circle cx="30" cy="30" r="28" fill="var(--color-violet)" />
+        </svg>
+        <svg className="absolute top-16 right-12 opacity-20" width="40" height="40" viewBox="0 0 40 40" style={{ animation: "float 3s ease-in-out infinite 0.5s" }}>
+          <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--color-teal)" />
+        </svg>
+        <svg className="absolute bottom-12 left-16 opacity-15" width="48" height="48" viewBox="0 0 48 48" style={{ animation: "float 5s ease-in-out infinite 1s" }}>
+          <polygon points="24,4 44,38 4,38" fill="var(--color-amber)" />
+        </svg>
+        <svg className="absolute bottom-20 right-20 opacity-15" width="36" height="36" viewBox="0 0 36 36" style={{ animation: "float 3.5s ease-in-out infinite 1.5s" }}>
+          <circle cx="18" cy="18" r="16" fill="var(--color-rose)" />
+        </svg>
+        <svg className="absolute top-32 left-1/4 opacity-10" width="20" height="20" viewBox="0 0 20 20" style={{ animation: "float 6s ease-in-out infinite 2s" }}>
+          <circle cx="10" cy="10" r="8" fill="var(--color-accent)" />
+        </svg>
+
+        <div className="relative">
+          {/* Logo mark */}
+          <div className="mx-auto mb-6 flex items-center justify-center">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="28" fill="var(--color-accent)" />
+              <circle cx="22" cy="26" r="5" fill="white" />
+              <circle cx="42" cy="26" r="5" fill="var(--color-violet)" />
+              <path d="M20 42c6 6 18 6 24 0" stroke="white" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="14" cy="16" r="3" fill="var(--color-teal)" opacity="0.7" />
+              <circle cx="50" cy="18" r="2" fill="var(--color-amber)" opacity="0.7" />
+            </svg>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            La tua AI, <span style={{ color: "var(--color-accent)" }}>oltre la chat</span>
+          </h1>
+          <p
+            className="mt-4 text-lg leading-relaxed"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            Un assistente AI che usa strumenti, plugin, web, file e API.
+            <br />
+            Leggero, estensibile, tuo.
+          </p>
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <Link href="/signup" className="btn-primary px-6 py-2.5">
+              Prova Tarry
+            </Link>
+            <a href="#plans" className="btn-secondary px-6 py-2.5">
+              Scopri i piani
+            </a>
+          </div>
         </div>
-        <p
-          className="mt-6 text-xs"
-          style={{ color: "var(--color-text-tertiary)" }}
-        >
-          by TestardStudios
-        </p>
       </section>
 
       {/* Features */}
@@ -123,12 +214,21 @@ export default function LandingPage() {
         }}
       >
         <div className="mx-auto max-w-4xl px-6">
-          <h2 className="text-2xl font-semibold text-center mb-12">
-            Cosa può fare Tarry
+          <h2 className="text-2xl font-semibold text-center mb-3">
+            Cosa puo fare Tarry
           </h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <p className="text-center mb-12 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+            Sei strumenti, un&apos;interfaccia
+          </p>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
-              <div key={f.title} className="card">
+              <div key={f.title} className="card group transition-all hover:shadow-sm">
+                <div
+                  className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-lg"
+                  style={{ background: f.bg, color: f.color }}
+                >
+                  {f.icon}
+                </div>
                 <h3 className="font-medium mb-1">{f.title}</h3>
                 <p
                   className="text-sm leading-relaxed"
@@ -142,40 +242,70 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Decorative divider */}
+      <div className="flex items-center justify-center gap-2 py-4" style={{ background: "var(--color-bg)" }}>
+        <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="var(--color-accent)" opacity="0.4" /></svg>
+        <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="var(--color-violet)" opacity="0.4" /></svg>
+        <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="var(--color-teal)" opacity="0.4" /></svg>
+        <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="var(--color-rose)" opacity="0.4" /></svg>
+        <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="var(--color-amber)" opacity="0.4" /></svg>
+      </div>
+
       {/* Plans */}
       <section className="py-20 px-6" id="plans">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-2xl font-semibold text-center mb-12">Piani</h2>
-          <div className="grid gap-6 sm:grid-cols-3">
+          <h2 className="text-2xl font-semibold text-center mb-3">Piani</h2>
+          <p className="text-center mb-12 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+            Inizia gratis, scala quando serve
+          </p>
+          <div className="grid gap-5 sm:grid-cols-3">
             {plans.map((p) => (
               <div
                 key={p.name}
-                className="card flex flex-col"
+                className="card flex flex-col transition-all hover:shadow-sm"
                 style={
                   p.highlight
-                    ? { borderColor: "var(--color-accent)" }
+                    ? { borderColor: p.color, borderWidth: "2px" }
                     : undefined
                 }
               >
-                <div className="flex items-baseline justify-between mb-4">
-                  <h3 className="font-semibold">{p.name}</h3>
-                  <span className="text-2xl font-bold">{p.price}</span>
+                {p.highlight && (
+                  <span
+                    className="self-start text-xs font-medium px-2 py-0.5 rounded mb-3"
+                    style={{ background: p.bg, color: p.color }}
+                  >
+                    Consigliato
+                  </span>
+                )}
+                <div className="flex items-baseline gap-1 mb-1">
+                  <h3 className="font-semibold text-lg">{p.name}</h3>
                 </div>
-                <ul className="flex-1 space-y-2">
+                <div className="flex items-baseline gap-0.5 mb-4">
+                  <span className="text-3xl font-bold" style={{ color: p.color }}>
+                    &euro;{p.price}
+                  </span>
+                  <span className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
+                    /mese
+                  </span>
+                </div>
+                <ul className="flex-1 space-y-2 mb-6">
                   {p.features.map((f) => (
                     <li
                       key={f}
                       className="flex items-start gap-2 text-sm"
                       style={{ color: "var(--color-text-secondary)" }}
                     >
-                      <span style={{ color: "var(--color-success)" }}>&#10003;</span>
+                      <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0 mt-0.5" style={{ color: p.color }}>
+                        <circle cx="8" cy="8" r="6" fill="currentColor" opacity="0.15" />
+                        <path d="M5.5 8l2 2 3.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                       {f}
                     </li>
                   ))}
                 </ul>
                 <Link
                   href="/signup"
-                  className={`mt-6 text-center ${
+                  className={`text-center ${
                     p.highlight ? "btn-primary" : "btn-secondary"
                   }`}
                 >
@@ -189,13 +319,22 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer
-        className="border-t py-8 px-6 text-center text-xs"
+        className="border-t py-8 px-6"
         style={{
           borderColor: "var(--color-border-light)",
-          color: "var(--color-text-tertiary)",
         }}
       >
-        Tarry AI &mdash; by TestardStudios
+        <div className="flex items-center justify-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
+            <circle cx="8" cy="10" r="2" fill="white" />
+            <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
+            <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+            Tarry AI &mdash; by TestardStudios
+          </span>
+        </div>
       </footer>
     </div>
   );

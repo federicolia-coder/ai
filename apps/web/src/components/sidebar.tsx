@@ -7,6 +7,71 @@ import { useChatStore } from "@/lib/store";
 import type { Conversation } from "@/types/database";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+function IconRename() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M8.5 2.5l3 3M2 9.5L9.5 2l3 3L5 12.5H2v-3z" />
+    </svg>
+  );
+}
+
+function IconArchive() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="2" width="12" height="3" rx="1" />
+      <path d="M2 5v6a1 1 0 001 1h8a1 1 0 001-1V5" />
+      <path d="M5.5 8h3" />
+    </svg>
+  );
+}
+
+function IconDelete() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M4 4l6 6M10 4l-6 6" />
+    </svg>
+  );
+}
+
+function IconDashboard() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="5" height="5" rx="1" />
+      <rect x="9" y="2" width="5" height="5" rx="1" />
+      <rect x="2" y="9" width="5" height="5" rx="1" />
+      <rect x="9" y="9" width="5" height="5" rx="1" />
+    </svg>
+  );
+}
+
+function IconPlugin() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="10" height="10" rx="2" />
+      <circle cx="8" cy="8" r="2" />
+    </svg>
+  );
+}
+
+function IconSettings() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M3.8 12.2l1.4-1.4M10.8 5.2l1.4-1.4" />
+    </svg>
+  );
+}
+
+function IconLogout() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3" />
+      <path d="M10 11l3-3-3-3" />
+      <path d="M13 8H6" />
+    </svg>
+  );
+}
+
 export function Sidebar() {
   const router = useRouter();
   const {
@@ -140,10 +205,19 @@ export function Sidebar() {
         className="flex items-center justify-between px-4 py-3 border-b"
         style={{ borderColor: "var(--color-border-light)" }}
       >
-        <span className="text-sm font-semibold tracking-tight">Tarry</span>
+        <div className="flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
+            <circle cx="8" cy="10" r="2" fill="white" />
+            <circle cx="16" cy="10" r="2" fill="var(--color-violet)" />
+            <path d="M8 16c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span className="text-sm font-semibold tracking-tight">Tarry</span>
+        </div>
         <button
           onClick={createConversation}
-          className="btn-ghost px-2 py-1 text-xs"
+          className="inline-flex items-center justify-center rounded-lg px-2 py-1 text-xs font-medium transition-colors"
+          style={{ color: "var(--color-accent)" }}
         >
           + Nuova
         </button>
@@ -170,9 +244,12 @@ export function Sidebar() {
             style={{
               background:
                 currentConversationId === c.id
-                  ? "var(--color-bg-tertiary)"
+                  ? "var(--color-accent-soft)"
                   : "transparent",
-              color: "var(--color-text)",
+              color:
+                currentConversationId === c.id
+                  ? "var(--color-accent)"
+                  : "var(--color-text)",
             }}
           >
             {editingId === c.id ? (
@@ -191,34 +268,35 @@ export function Sidebar() {
             ) : (
               <span className="truncate flex-1">{c.title}</span>
             )}
-            <div className="ml-2 hidden items-center gap-0.5 group-hover:flex">
+            <div className="ml-2 hidden items-center gap-0.5 group-hover:flex" style={{ color: "var(--color-text-tertiary)" }}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditingId(c.id);
                   setEditTitle(c.title);
                 }}
-                className="text-xs opacity-50 hover:opacity-100 px-0.5"
+                className="hover:opacity-100 opacity-60 p-0.5 transition-opacity"
                 aria-label="Rename"
                 title="Rinomina"
               >
-                &#9998;
+                <IconRename />
               </button>
               <button
                 onClick={(e) => archiveConversation(c.id, e)}
-                className="text-xs opacity-50 hover:opacity-100 px-0.5"
+                className="hover:opacity-100 opacity-60 p-0.5 transition-opacity"
                 aria-label="Archive"
                 title="Archivia"
               >
-                &#128230;
+                <IconArchive />
               </button>
               <button
                 onClick={(e) => deleteConversation(c.id, e)}
-                className="text-xs opacity-50 hover:opacity-100 px-0.5"
+                className="hover:opacity-100 opacity-60 p-0.5 transition-opacity"
                 aria-label="Delete"
                 title="Elimina"
+                style={{ color: "var(--color-rose)" }}
               >
-                &times;
+                <IconDelete />
               </button>
             </div>
           </div>
@@ -235,33 +313,37 @@ export function Sidebar() {
 
       {/* Footer */}
       <div
-        className="border-t px-3 py-3 space-y-1"
+        className="border-t px-3 py-3 space-y-0.5"
         style={{ borderColor: "var(--color-border-light)" }}
       >
         <button
           onClick={() => router.push("/dashboard")}
-          className="btn-ghost w-full justify-start text-xs"
+          className="btn-ghost w-full justify-start text-xs gap-2"
         >
+          <span style={{ color: "var(--color-teal)" }}><IconDashboard /></span>
           Dashboard
         </button>
         <button
           onClick={() => router.push("/plugins")}
-          className="btn-ghost w-full justify-start text-xs"
+          className="btn-ghost w-full justify-start text-xs gap-2"
         >
+          <span style={{ color: "var(--color-violet)" }}><IconPlugin /></span>
           Plugin
         </button>
         <button
           onClick={() => router.push("/settings")}
-          className="btn-ghost w-full justify-start text-xs"
+          className="btn-ghost w-full justify-start text-xs gap-2"
         >
+          <span style={{ color: "var(--color-amber)" }}><IconSettings /></span>
           Impostazioni
         </button>
         <ThemeToggle />
         <button
           onClick={handleLogout}
-          className="btn-ghost w-full justify-start text-xs"
-          style={{ color: "var(--color-danger)" }}
+          className="btn-ghost w-full justify-start text-xs gap-2"
+          style={{ color: "var(--color-rose)" }}
         >
+          <IconLogout />
           Esci
         </button>
       </div>

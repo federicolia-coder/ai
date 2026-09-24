@@ -5,10 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, Subscription, ApiKey, Usage } from "@/types/database";
 
-const PLAN_DETAILS: Record<string, { tokens: string; price: string }> = {
-  free: { tokens: "100K", price: "€0" },
-  plus: { tokens: "2M", price: "€9/mese" },
-  pro: { tokens: "10M", price: "€29/mese" },
+const PLAN_DETAILS: Record<string, { tokens: string; price: string; color: string }> = {
+  free: { tokens: "100K", price: "€0", color: "var(--color-teal)" },
+  plus: { tokens: "2M", price: "€9/mese", color: "var(--color-accent)" },
+  pro: { tokens: "10M", price: "€29/mese", color: "var(--color-violet)" },
 };
 
 export default function SettingsPage() {
@@ -175,23 +175,30 @@ function SettingsContent() {
   }
 
   const tabs = [
-    { key: "account" as const, label: "Account" },
-    { key: "subscription" as const, label: "Abbonamento" },
-    { key: "usage" as const, label: "Utilizzo" },
-    { key: "api_keys" as const, label: "API Keys" },
+    { key: "account" as const, label: "Account", color: "var(--color-accent)" },
+    { key: "subscription" as const, label: "Abbonamento", color: "var(--color-violet)" },
+    { key: "usage" as const, label: "Utilizzo", color: "var(--color-teal)" },
+    { key: "api_keys" as const, label: "API Keys", color: "var(--color-amber)" },
   ];
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold mb-6">Impostazioni</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: "var(--color-amber)" }}>
+            <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <h1 className="text-xl font-semibold">Impostazioni</h1>
+        </div>
 
         {checkoutMessage && (
           <div
             className="rounded-lg px-4 py-3 mb-4 text-sm"
             style={{
-              background: "var(--color-bg-secondary)",
-              border: "1px solid var(--color-border)",
+              background: "var(--color-accent-soft)",
+              border: "1px solid var(--color-accent)",
+              color: "var(--color-accent)",
             }}
           >
             {checkoutMessage}
@@ -213,8 +220,10 @@ function SettingsContent() {
                   tab === t.key ? "var(--color-bg)" : "transparent",
                 color:
                   tab === t.key
-                    ? "var(--color-text)"
+                    ? t.color
                     : "var(--color-text-secondary)",
+                boxShadow:
+                  tab === t.key ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
               }}
             >
               {t.label}
@@ -263,17 +272,23 @@ function SettingsContent() {
         {tab === "subscription" && subscription && (
           <div className="space-y-4">
             <div className="card">
-              <div className="flex items-baseline justify-between mb-2">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-lg font-semibold capitalize">
                   {subscription.plan}
                 </span>
                 <span
-                  className="text-xs px-2 py-0.5 rounded-full"
-                  style={{
-                    background: "var(--color-bg-tertiary)",
-                    color: "var(--color-text-secondary)",
-                  }}
+                  className="inline-flex items-center gap-1.5 text-xs"
+                  style={{ color: "var(--color-text-secondary)" }}
                 >
+                  <span
+                    className="inline-block h-2 w-2 rounded-sm"
+                    style={{
+                      background:
+                        subscription.status === "active"
+                          ? "var(--color-teal)"
+                          : "var(--color-text-tertiary)",
+                    }}
+                  />
                   {subscription.status}
                 </span>
               </div>
@@ -308,7 +323,7 @@ function SettingsContent() {
             {subscription.plan === "free" && (
               <div className="grid gap-3 sm:grid-cols-2">
                 {(["plus", "pro"] as const).map((plan) => (
-                  <div key={plan} className="card">
+                  <div key={plan} className="card" style={{ borderColor: PLAN_DETAILS[plan].color }}>
                     <h3 className="font-semibold capitalize mb-1">{plan}</h3>
                     <p
                       className="text-sm mb-1"
@@ -316,7 +331,7 @@ function SettingsContent() {
                     >
                       {PLAN_DETAILS[plan].tokens} token/mese
                     </p>
-                    <p className="text-lg font-bold mb-3">
+                    <p className="text-lg font-bold mb-3" style={{ color: PLAN_DETAILS[plan].color }}>
                       {PLAN_DETAILS[plan].price}
                     </p>
                     <button
@@ -332,7 +347,7 @@ function SettingsContent() {
             )}
 
             {subscription.plan === "plus" && (
-              <div className="card">
+              <div className="card" style={{ borderColor: "var(--color-violet)" }}>
                 <h3 className="font-semibold mb-1">Pro</h3>
                 <p
                   className="text-sm mb-1"
@@ -340,7 +355,7 @@ function SettingsContent() {
                 >
                   {PLAN_DETAILS.pro.tokens} token/mese
                 </p>
-                <p className="text-lg font-bold mb-3">
+                <p className="text-lg font-bold mb-3" style={{ color: "var(--color-violet)" }}>
                   {PLAN_DETAILS.pro.price}
                 </p>
                 <button
@@ -360,7 +375,7 @@ function SettingsContent() {
           <div className="space-y-4">
             <div className="card">
               <h2
-                className="text-xs font-medium uppercase tracking-wider mb-3"
+                className="text-xs font-medium mb-3"
                 style={{ color: "var(--color-text-tertiary)" }}
               >
                 Token utilizzati
@@ -379,11 +394,11 @@ function SettingsContent() {
               {usage && (
                 <>
                   <div
-                    className="h-2 rounded-full overflow-hidden mb-3"
+                    className="h-2 rounded-sm overflow-hidden mb-3"
                     style={{ background: "var(--color-bg-tertiary)" }}
                   >
                     <div
-                      className="h-full rounded-full transition-all"
+                      className="h-full rounded-sm transition-all"
                       style={{
                         width: `${Math.min(
                           (usage.tokens_used / usage.token_limit) * 100,
@@ -391,8 +406,8 @@ function SettingsContent() {
                         )}%`,
                         background:
                           usage.tokens_used / usage.token_limit > 0.9
-                            ? "var(--color-danger)"
-                            : "var(--color-accent)",
+                            ? "var(--color-rose)"
+                            : "var(--color-teal)",
                       }}
                     />
                   </div>
@@ -442,15 +457,15 @@ function SettingsContent() {
                 <div
                   className="mt-3 rounded-lg p-3 text-xs font-mono break-all"
                   style={{
-                    background: "var(--color-bg-tertiary)",
-                    border: "1px solid var(--color-warning)",
+                    background: "var(--color-amber-soft)",
+                    border: "1px solid var(--color-amber)",
                   }}
                 >
                   <p
                     className="text-xs font-sans font-medium mb-1"
-                    style={{ color: "var(--color-warning)" }}
+                    style={{ color: "var(--color-amber)" }}
                   >
-                    Copia questa chiave — non verrà più mostrata
+                    Copia questa chiave — non verra piu mostrata
                   </p>
                   {createdKey}
                 </div>
@@ -479,7 +494,7 @@ function SettingsContent() {
                       <button
                         onClick={() => deleteApiKey(k.id)}
                         className="btn-ghost text-xs"
-                        style={{ color: "var(--color-danger)" }}
+                        style={{ color: "var(--color-rose)" }}
                       >
                         Revoca
                       </button>

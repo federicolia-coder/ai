@@ -23,10 +23,20 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="btn-ghost w-full justify-start text-xs"
-      title={dark ? "Modalità chiara" : "Modalità scura"}
+      className="btn-ghost w-full justify-start text-xs gap-2"
+      title={dark ? "Modalita chiara" : "Modalita scura"}
     >
-      {dark ? "☀ Chiaro" : "☾ Scuro"}
+      {dark ? (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--color-amber)" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="8" cy="8" r="3" />
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4" />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--color-violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 10a7 7 0 01-8-8 7 7 0 108 8z" />
+        </svg>
+      )}
+      {dark ? "Chiaro" : "Scuro"}
     </button>
   );
 }

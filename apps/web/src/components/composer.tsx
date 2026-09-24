@@ -71,7 +71,6 @@ export function Composer() {
     setInput("");
     setGenerating(true);
 
-    // Save user message
     await supabase.from("messages").insert({
       conversation_id: convId,
       user_id: user.id,
@@ -79,7 +78,6 @@ export function Composer() {
       content,
     });
 
-    // Call Supabase Edge Function for chat
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
@@ -124,7 +122,7 @@ export function Composer() {
         conversation_id: convId,
         user_id: user.id,
         role: "assistant",
-        content: `Error: ${err.message || "Something went wrong"}`,
+        content: `Errore: ${err.message || "Qualcosa e andato storto"}`,
         token_count: 0,
         metadata: null,
         created_at: new Date().toISOString(),
@@ -171,16 +169,26 @@ export function Composer() {
           <button
             type="submit"
             disabled={isGenerating || !input.trim()}
-            className="btn-primary shrink-0 px-3 py-1.5 text-xs"
+            className="shrink-0 inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-all disabled:opacity-30"
+            style={{ background: "var(--color-accent)" }}
           >
-            {isGenerating ? "..." : "Invia"}
+            {isGenerating ? (
+              <span
+                className="inline-block h-1 w-4 rounded-sm"
+                style={{ background: "white", animation: "pulse-soft 1s ease-in-out infinite" }}
+              />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 8h12M10 4l4 4-4 4" />
+              </svg>
+            )}
           </button>
         </div>
         <p
           className="mt-2 text-center text-xs"
           style={{ color: "var(--color-text-tertiary)" }}
         >
-          Tarry può commettere errori. Verifica le informazioni importanti.
+          Tarry puo commettere errori. Verifica le informazioni importanti.
         </p>
       </div>
     </form>

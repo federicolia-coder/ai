@@ -20,8 +20,52 @@ function CopyButton({ text }: { text: string }) {
       }}
       title="Copia"
     >
-      &#128203;
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4.5" y="4.5" width="7" height="7" rx="1" />
+        <path d="M9.5 4.5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v5.5a1 1 0 001 1h1.5" />
+      </svg>
     </button>
+  );
+}
+
+function Avatar({ role }: { role: string }) {
+  if (role === "user") {
+    return (
+      <div
+        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium"
+        style={{ background: "var(--color-violet-soft)", color: "var(--color-violet)" }}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="7" cy="5" r="2.5" />
+          <path d="M3 12.5c0-2.2 1.8-4 4-4s4 1.8 4 4" strokeLinecap="round" />
+        </svg>
+      </div>
+    );
+  }
+  if (role === "tool") {
+    return (
+      <div
+        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium"
+        style={{ background: "var(--color-amber-soft)", color: "var(--color-amber)" }}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <path d="M8 2L6 5h3L7 12" strokeLinejoin="round" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div
+      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium"
+      style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="5" cy="6" r="1" fill="currentColor" />
+        <circle cx="9" cy="6" r="1" fill="currentColor" />
+        <path d="M5 9.5c1 1 3 1 4 0" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+      </svg>
+    </div>
   );
 }
 
@@ -37,7 +81,15 @@ export function ChatMessages() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-1">Tarry</h2>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mx-auto mb-4">
+            <circle cx="24" cy="24" r="20" fill="var(--color-accent)" opacity="0.1" />
+            <circle cx="24" cy="24" r="14" fill="var(--color-accent)" opacity="0.15" />
+            <circle cx="24" cy="24" r="8" fill="var(--color-accent)" />
+            <circle cx="20" cy="22" r="1.5" fill="white" />
+            <circle cx="28" cy="22" r="1.5" fill="var(--color-violet)" />
+            <path d="M20 27c2 2 6 2 8 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <h2 className="text-lg font-semibold mb-1">Ciao!</h2>
           <p
             className="text-sm"
             style={{ color: "var(--color-text-secondary)" }}
@@ -56,19 +108,7 @@ export function ChatMessages() {
           .filter((m) => m.role !== "system")
           .map((m) => (
             <div key={m.id} className="group relative flex gap-3">
-              <div
-                className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium"
-                style={{
-                  background:
-                    m.role === "user"
-                      ? "var(--color-accent)"
-                      : "var(--color-bg-tertiary)",
-                  color:
-                    m.role === "user" ? "#fff" : "var(--color-text-secondary)",
-                }}
-              >
-                {m.role === "user" ? "U" : m.role === "tool" ? "T" : "A"}
-              </div>
+              <Avatar role={m.role} />
               <div className="min-w-0 flex-1">
                 <p
                   className="text-xs font-medium mb-1"
@@ -98,15 +138,7 @@ export function ChatMessages() {
 
         {isGenerating && (
           <div className="flex gap-3">
-            <div
-              className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium"
-              style={{
-                background: "var(--color-bg-tertiary)",
-                color: "var(--color-text-secondary)",
-              }}
-            >
-              A
-            </div>
+            <Avatar role="assistant" />
             <div className="min-w-0 flex-1">
               <p
                 className="text-xs font-medium mb-1"
@@ -114,26 +146,26 @@ export function ChatMessages() {
               >
                 Tarry
               </p>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1 h-5">
                 <span
-                  className="h-2 w-2 rounded-full animate-bounce"
+                  className="inline-block h-1.5 w-6 rounded-sm"
                   style={{
-                    background: "var(--color-text-tertiary)",
-                    animationDelay: "0ms",
+                    background: "var(--color-accent)",
+                    animation: "pulse-soft 1.4s ease-in-out infinite",
                   }}
                 />
                 <span
-                  className="h-2 w-2 rounded-full animate-bounce"
+                  className="inline-block h-1.5 w-4 rounded-sm"
                   style={{
-                    background: "var(--color-text-tertiary)",
-                    animationDelay: "150ms",
+                    background: "var(--color-violet)",
+                    animation: "pulse-soft 1.4s ease-in-out infinite 0.2s",
                   }}
                 />
                 <span
-                  className="h-2 w-2 rounded-full animate-bounce"
+                  className="inline-block h-1.5 w-2 rounded-sm"
                   style={{
-                    background: "var(--color-text-tertiary)",
-                    animationDelay: "300ms",
+                    background: "var(--color-teal)",
+                    animation: "pulse-soft 1.4s ease-in-out infinite 0.4s",
                   }}
                 />
               </div>

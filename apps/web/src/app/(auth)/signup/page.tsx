@@ -41,6 +41,10 @@ export default function SignupPage() {
         style={{ background: "var(--color-bg)" }}
       >
         <div className="w-full max-w-sm text-center">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mx-auto mb-4">
+            <circle cx="24" cy="24" r="20" fill="var(--color-teal)" opacity="0.15" />
+            <path d="M16 24l5 5 11-12" stroke="var(--color-teal)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           <h1 className="text-2xl font-bold mb-2">Controlla la tua email</h1>
           <p
             className="text-sm"
@@ -62,16 +66,35 @@ export default function SignupPage() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center px-4"
+      className="flex min-h-screen items-center justify-center px-4 relative overflow-hidden"
       style={{ background: "var(--color-bg)" }}
     >
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-center mb-1">Tarry</h1>
+      {/* Decorative shapes */}
+      <svg className="absolute top-16 right-12 opacity-10" width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="var(--color-violet)" />
+      </svg>
+      <svg className="absolute bottom-20 left-16 opacity-10" width="70" height="70" viewBox="0 0 70 70">
+        <rect x="8" y="8" width="54" height="54" rx="14" fill="var(--color-teal)" />
+      </svg>
+      <svg className="absolute top-1/4 left-1/4 opacity-8" width="30" height="30" viewBox="0 0 30 30">
+        <circle cx="15" cy="15" r="12" fill="var(--color-amber)" opacity="0.15" />
+      </svg>
+
+      <div className="w-full max-w-sm relative">
+        <div className="flex justify-center mb-4">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="16" fill="var(--color-violet)" />
+            <circle cx="14" cy="17" r="3" fill="white" />
+            <circle cx="26" cy="17" r="3" fill="var(--color-teal)" />
+            <path d="M13 26c3.5 3.5 10.5 3.5 14 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold text-center mb-1">Crea il tuo account</h1>
         <p
           className="text-center text-sm mb-8"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Crea il tuo account
+          Inizia a usare Tarry gratis
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,7 +142,7 @@ export default function SignupPage() {
           </div>
 
           {error && (
-            <p className="text-sm" style={{ color: "var(--color-danger)" }}>
+            <p className="text-sm" style={{ color: "var(--color-rose)" }}>
               {error}
             </p>
           )}
@@ -133,7 +156,7 @@ export default function SignupPage() {
           className="mt-6 text-center text-sm"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Hai già un account?{" "}
+          Hai gia un account?{" "}
           <Link
             href="/login"
             className="font-medium"

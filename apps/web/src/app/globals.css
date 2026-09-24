@@ -4,41 +4,57 @@
 
 @layer base {
   :root {
-    --color-bg: #ffffff;
-    --color-bg-secondary: #f8f9fa;
-    --color-bg-tertiary: #f0f1f3;
-    --color-text: #1a1d23;
-    --color-text-secondary: #5f6368;
-    --color-text-tertiary: #9aa0a6;
-    --color-border: #e2e5e9;
-    --color-border-light: #eef0f2;
-    --color-accent: #2563eb;
-    --color-accent-hover: #1d4ed8;
-    --color-danger: #dc2626;
-    --color-success: #16a34a;
-    --color-warning: #d97706;
+    --color-bg: #fefefe;
+    --color-bg-secondary: #f6f5f4;
+    --color-bg-tertiary: #edeceb;
+    --color-text: #1c1917;
+    --color-text-secondary: #57534e;
+    --color-text-tertiary: #a8a29e;
+    --color-border: #e7e5e4;
+    --color-border-light: #f0eeec;
+    --color-accent: #f06730;
+    --color-accent-hover: #e05520;
+    --color-accent-soft: #fff1eb;
+    --color-violet: #8b5cf6;
+    --color-violet-soft: #f3efff;
+    --color-teal: #0d9488;
+    --color-teal-soft: #ebfaf8;
+    --color-rose: #e11d48;
+    --color-rose-soft: #fff0f3;
+    --color-amber: #d97706;
+    --color-amber-soft: #fff8eb;
+    --color-lime: #65a30d;
+    --color-lime-soft: #f4faeb;
   }
 
   .dark {
-    --color-bg: #0f1117;
-    --color-bg-secondary: #1a1d27;
-    --color-bg-tertiary: #242731;
-    --color-text: #e8eaed;
-    --color-text-secondary: #9aa0a6;
-    --color-text-tertiary: #5f6368;
-    --color-border: #2d3039;
-    --color-border-light: #23262f;
-    --color-accent: #4b8bff;
-    --color-accent-hover: #6da0ff;
-    --color-danger: #f87171;
-    --color-success: #4ade80;
-    --color-warning: #fbbf24;
+    --color-bg: #121113;
+    --color-bg-secondary: #1c1a1e;
+    --color-bg-tertiary: #262428;
+    --color-text: #f0eded;
+    --color-text-secondary: #a8a2a0;
+    --color-text-tertiary: #6b6462;
+    --color-border: #302d31;
+    --color-border-light: #252326;
+    --color-accent: #f2854e;
+    --color-accent-hover: #f59a6a;
+    --color-accent-soft: #2a1a10;
+    --color-violet: #a78bfa;
+    --color-violet-soft: #1e1530;
+    --color-teal: #2dd4bf;
+    --color-teal-soft: #0c2320;
+    --color-rose: #fb7185;
+    --color-rose-soft: #2a0f16;
+    --color-amber: #fbbf24;
+    --color-amber-soft: #261d08;
+    --color-lime: #a3e635;
+    --color-lime-soft: #1a2308;
   }
 
   body {
     background: var(--color-bg);
     color: var(--color-text);
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -47,7 +63,7 @@
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-lg px-4 py-2
-           text-sm font-medium transition-colors duration-150
+           text-sm font-medium transition-all duration-150
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:pointer-events-none disabled:opacity-50;
   }
@@ -58,6 +74,7 @@
   }
   .btn-primary:hover {
     background: var(--color-accent-hover);
+    transform: translateY(-1px);
   }
 
   .btn-secondary {
@@ -88,7 +105,7 @@
   .input-field:focus {
     outline: none;
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
   }
 
   .card {
@@ -123,8 +140,7 @@
     @apply bg-transparent p-0;
   }
   .prose-tarry blockquote {
-    @apply border-l-2 pl-3 mb-3 italic;
-    border-color: var(--color-border);
+    @apply pl-4 mb-3 italic;
     color: var(--color-text-secondary);
   }
   .prose-tarry a {
@@ -141,5 +157,20 @@
   .prose-tarry th {
     background: var(--color-bg-secondary);
     @apply font-medium;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
   }
 }

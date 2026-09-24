@@ -72,31 +72,42 @@ export default function PluginsPage() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
-          Loading...
-        </p>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-accent)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
+          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-violet)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
+          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--color-teal)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
+        </div>
       </div>
     );
   }
 
+  const pluginColors = ["var(--color-violet)", "var(--color-teal)", "var(--color-accent)", "var(--color-rose)", "var(--color-amber)", "var(--color-lime)"];
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold mb-6">Plugin</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: "var(--color-violet)" }}>
+            <rect x="4" y="4" width="16" height="16" rx="4" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.3" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+          <h1 className="text-xl font-semibold">Plugin</h1>
+        </div>
 
         <div className="space-y-3">
-          {plugins.map((p) => (
+          {plugins.map((p, i) => (
             <div key={p.id} className="card">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className="inline-block h-2 w-2 rounded-sm shrink-0"
+                      style={{ background: pluginColors[i % pluginColors.length] }}
+                    />
                     <h3 className="text-sm font-medium">{p.name}</h3>
                     <span
-                      className="text-xs px-1.5 py-0.5 rounded"
-                      style={{
-                        background: "var(--color-bg-tertiary)",
-                        color: "var(--color-text-tertiary)",
-                      }}
+                      className="text-xs"
+                      style={{ color: "var(--color-text-tertiary)" }}
                     >
                       v{p.version}
                     </span>
@@ -107,50 +118,28 @@ export default function PluginsPage() {
                   >
                     {p.description}
                   </p>
-                  <div className="flex flex-wrap gap-1">
-                    {p.tools.map((t) => (
-                      <span
-                        key={t}
-                        className="text-xs px-1.5 py-0.5 rounded font-mono"
-                        style={{
-                          background: "var(--color-bg-secondary)",
-                          color: "var(--color-text-tertiary)",
-                        }}
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
+                  {p.tools.length > 0 && (
+                    <p className="text-xs font-mono" style={{ color: "var(--color-text-tertiary)" }}>
+                      {p.tools.join(", ")}
+                    </p>
+                  )}
                   {p.permissions.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {p.permissions.map((perm) => (
-                        <span
-                          key={perm}
-                          className="text-xs px-1.5 py-0.5 rounded"
-                          style={{
-                            background: "var(--color-bg-secondary)",
-                            color: "var(--color-warning)",
-                          }}
-                        >
-                          {perm}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-xs mt-1" style={{ color: "var(--color-amber)" }}>
+                      {p.permissions.join(", ")}
+                    </p>
                   )}
                 </div>
                 <button
                   onClick={() => togglePlugin(p)}
-                  className={`shrink-0 ml-4 rounded-full w-10 h-5 transition-colors relative ${
-                    p.userEnabled ? "" : ""
-                  }`}
+                  className="shrink-0 ml-4 relative w-9 h-5 rounded-lg transition-colors"
                   style={{
                     background: p.userEnabled
-                      ? "var(--color-accent)"
+                      ? pluginColors[i % pluginColors.length]
                       : "var(--color-bg-tertiary)",
                   }}
                 >
                   <span
-                    className="absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform"
+                    className="absolute top-0.5 h-4 w-4 rounded-md bg-white transition-all"
                     style={{
                       left: p.userEnabled ? "calc(100% - 18px)" : "2px",
                     }}
