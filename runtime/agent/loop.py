@@ -16,28 +16,48 @@ TOOL_CALL_PATTERN = re.compile(
     re.DOTALL,
 )
 
-TOOL_SYSTEM_PROMPT = """You have access to tools. To use one, write EXACTLY this format:
-<tool_call>{"name": "tool_name", "arguments": {"param": "value"}}</tool_call>
+# Qwen 2.5 was trained on this exact Hermes-style layout; the model calls tools far more
+# reliably with it than with a free-form tool list.
+TOOLS_HEADER = """# Tools
 
-Call at most one tool per message. After receiving the result, present the information clearly to the user. Use the result data directly — do not invent or guess values. If a tool returns an error, tell the user what went wrong.
+You may call one or more functions to assist with the user query.
 
-Available tools (parameters marked ? are optional):
-"""
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{tools}
+</tools>
+
+For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+<tool_call>
+{{"name": <function-name>, "arguments": <args-json-object>}}
+</tool_call>"""
+
+TOOL_RULES = """Rules for tools:
+- If the answer needs a computed number, current information, a file's content or a connected service, call the tool in this same reply. Never announce that you will do it later.
+- Use the tool result as the source of truth. Do not invent or change values. If a tool returns an error, tell the user what went wrong.
+- Write the final answer in plain text, without LaTeX."""
+
+CALCULATE_EXAMPLE = """Example. User: "Quanto fa il 17,5% di 2.340 €?"
+Assistant:
+<tool_call>
+{"name": "calculate", "arguments": {"expression": "2340 * 0.175"}}
+</tool_call>
+In calculate expressions use a dot for decimals and * / + - ** only."""
+
+# The model sometimes describes what it is about to do and stops. One reminder is enough to get the call.
+ANNOUNCE_PATTERN = re.compile(
+    r"\b(voglio|vado a|procedo|lasciami|ora (?:calcol|cerc|legg|controll)|adesso (?:calcol|cerc|legg)|"
+    r"calcoler|cercher|legger|controller|let me|i will|i'll)\w*",
+    re.IGNORECASE,
+)
+MATH_QUESTION_PATTERN = re.compile(
+    r"\d.*(%|per ?cento|percent|[+*×÷^]|\bx\s*\d)|quanto fa|calcola",
+    re.IGNORECASE,
+)
+NUDGE = "Chiama ora lo strumento adatto usando il formato <tool_call>. Non spiegare prima: scrivi solo la chiamata."
 
 INLINE_FILES_MAX_CHARS = 2000
 FORMATTED_RESULT_MAX_CHARS = 2500
-
-
-def _signature(name: str, schema: dict[str, Any]) -> str:
-    props = schema.get("properties", {}) or {}
-    required = set(schema.get("required", []) or [])
-    args = []
-    for pname, pdef in props.items():
-        ptype = pdef.get("type", "string")
-        if "enum" in pdef:
-            ptype = "|".join(str(v) for v in pdef["enum"])
-        args.append(f"{pname}{'' if pname in required else '?'}: {ptype}")
-    return f"{name}({', '.join(args)})"
 
 
 def _files_prompt(context: ToolContext, file_tools_enabled: bool) -> str:
@@ -88,6 +108,33 @@ def _parse_tool_call(text: str) -> tuple[str, dict] | None:
     return None
 
 
+def _tools_prompt(tool_defs: list[dict[str, Any]]) -> str:
+    lines = [
+        json.dumps(
+            {"type": "function", "function": {"name": td["name"], "description": td["description"], "parameters": td["parameters"]}},
+            ensure_ascii=False,
+        )
+        for td in tool_defs
+    ]
+    parts = [TOOLS_HEADER.format(tools="\n".join(lines)), TOOL_RULES]
+    if any(td["name"] == "calculate" for td in tool_defs):
+        parts.append(CALCULATE_EXAMPLE)
+    return "\n\n".join(parts)
+
+
+def _last_user_text(messages: list[dict[str, str]]) -> str:
+    for m in reversed(messages):
+        if m.get("role") == "user":
+            return m.get("content", "")
+    return ""
+
+
+def _should_nudge(reply: str, question: str, enabled: set[str]) -> bool:
+    if ANNOUNCE_PATTERN.search(reply):
+        return True
+    return "calculate" in enabled and bool(MATH_QUESTION_PATTERN.search(question))
+
+
 def _format_tool_result(tool_name: str, result: dict) -> str:
     if "error" in result:
         return f"Error: {result['error']}"
@@ -132,10 +179,7 @@ class AgentLoop:
 
         extra_system = []
         if tool_defs:
-            tool_desc = TOOL_SYSTEM_PROMPT
-            for td in tool_defs:
-                tool_desc += f"\n- {_signature(td['name'], td['parameters'])}: {td['description']}"
-            extra_system.append(tool_desc)
+            extra_system.append(_tools_prompt(tool_defs))
         files_prompt = _files_prompt(context, "read_file" in enabled_names)
         if files_prompt:
             extra_system.append(files_prompt)
@@ -147,7 +191,10 @@ class AgentLoop:
             else:
                 working_messages.insert(0, {"role": "system", "content": addition})
 
-        for iteration in range(MAX_TOOL_CALLS + 1):
+        question = _last_user_text(messages)
+        nudged = False
+
+        for iteration in range(MAX_TOOL_CALLS + 2):
             result = self.model.generate(
                 messages=working_messages,
                 max_tokens=max_tokens,
@@ -161,7 +208,21 @@ class AgentLoop:
             logger.info("Model output (iter %d): %s", iteration, content[:200])
 
             parsed = _parse_tool_call(content)
-            if not parsed or iteration >= MAX_TOOL_CALLS:
+
+            if not parsed and tool_defs and not nudged and not tools_used and _should_nudge(content, question, enabled_names):
+                nudged = True
+                logger.info("No tool call in a reply that needs one; nudging once")
+                # The reminder is not kept in the transcript: the model retries from the same point.
+                retry_messages = working_messages + [{"role": "user", "content": NUDGE}]
+                retry = self.model.generate(messages=retry_messages, max_tokens=max_tokens, temperature=0.2)
+                total_input += retry.get("input_tokens", 0)
+                total_output += retry.get("output_tokens", 0)
+                retry_content = retry.get("content", "")
+                if _parse_tool_call(retry_content):
+                    content = retry_content
+                    parsed = _parse_tool_call(content)
+
+            if not parsed or len(steps) >= MAX_TOOL_CALLS:
                 clean_content = TOOL_CALL_PATTERN.sub("", content).strip()
                 if not clean_content and last_tool_result:
                     clean_content = last_tool_result
@@ -207,12 +268,11 @@ class AgentLoop:
                 "status": status,
             })
 
-            clean_assistant = TOOL_CALL_PATTERN.sub("", content).strip()
-            if clean_assistant:
-                working_messages.append({"role": "assistant", "content": clean_assistant})
+            # Native layout: the assistant turn keeps its <tool_call>, the result comes back as <tool_response>.
+            working_messages.append({"role": "assistant", "content": content.strip()})
             working_messages.append({
                 "role": "user",
-                "content": f"[Tool result for {tool_name}]\n{formatted}",
+                "content": f"<tool_response>\n{formatted}\n</tool_response>",
             })
 
         return {

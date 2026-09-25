@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import dynamic from "next/dynamic";
 import {
   Calculator,
   CaretDown,
@@ -19,6 +20,17 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useChatStore } from "@/lib/store";
 import { TarryMark } from "@/components/tarry-mark";
+import { hasMath, normalizeMath } from "@/lib/math-markdown";
+
+const MathMarkdown = dynamic(() => import("@/components/math-markdown"), {
+  loading: () => null,
+});
+
+function MessageMarkdown({ content }: { content: string }) {
+  const text = normalizeMath(content);
+  if (hasMath(text)) return <MathMarkdown>{text}</MathMarkdown>;
+  return <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>;
+}
 
 interface ToolStep {
   tool: string;
@@ -314,7 +326,7 @@ export function ChatMessages() {
                     </div>
                   )}
                   <div className="prose-tarry text-sm leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                    <MessageMarkdown content={m.content} />
                   </div>
                   <CopyButton text={m.content} />
                 </div>

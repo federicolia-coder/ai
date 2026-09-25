@@ -1,4 +1,5 @@
 import ast
+import re
 import operator
 from typing import Any
 
@@ -37,6 +38,21 @@ def safe_eval(node: ast.AST) -> float:
     raise ValueError(f"Unsupported expression: {ast.dump(node)}")
 
 
+def normalize(expression: str) -> str:
+    """Accept the symbols and the decimal comma a model writing Italian tends to use."""
+    expr = expression.replace("×", "*").replace("÷", "/").replace("−", "-")
+    # "0,175" is a decimal comma only when no dot is present ("2.340,5" stays ambiguous and is rejected).
+    if "." not in expr:
+        expr = re.sub(r"(?<=\d),(?=\d)", ".", expr)
+    return expr
+
+
+def tidy(value: float) -> float | int:
+    """Drop binary floating point noise: 3480*1.22 is 4245.6, not 4245.599999999999."""
+    rounded = float(f"{value:.12g}")
+    return int(rounded) if rounded.is_integer() and abs(rounded) < 1e15 else rounded
+
+
 class CalculatorTool(Tool):
     def definition(self) -> ToolDefinition:
         return ToolDefinition(
@@ -55,10 +71,9 @@ class CalculatorTool(Tool):
         )
 
     async def execute(self, params: dict[str, Any], context: ToolContext | None = None) -> dict[str, Any]:
-        expression = params.get("expression", "")
+        expression = str(params.get("expression", ""))
         try:
-            tree = ast.parse(expression, mode="eval")
-            result = safe_eval(tree)
-            return {"result": result, "expression": expression}
+            tree = ast.parse(normalize(expression), mode="eval")
+            return {"result": tidy(safe_eval(tree)), "expression": expression}
         except (ValueError, SyntaxError, ZeroDivisionError) as e:
             return {"error": str(e), "expression": expression}

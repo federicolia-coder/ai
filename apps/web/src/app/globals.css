@@ -231,6 +231,9 @@
     color: var(--color-accent-text);
     @apply underline underline-offset-2;
   }
+  .prose-tarry .katex-display {
+    @apply my-3 overflow-x-auto overflow-y-hidden py-1;
+  }
   .prose-tarry table {
     @apply w-full text-xs mb-3 border-collapse;
   }
