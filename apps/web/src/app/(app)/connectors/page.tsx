@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Cloud, GithubLogo, NotionLogo, PlugsConnected, WebhooksLogo } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
+import { PageSkeleton } from "@/components/page-skeleton";
 import type { Connector, ConnectorField, UserConnector } from "@/types/database";
 
 const TOOL_LABELS: Record<string, string> = {
@@ -13,29 +15,16 @@ const TOOL_LABELS: Record<string, string> = {
   webhook_send: "inviare messaggi al tuo endpoint quando glielo chiedi",
 };
 
-const ICONS: Record<string, React.ReactNode> = {
-  cloud: <path d="M5 16a4 4 0 01-.5-7.97A6 6 0 0115.5 8 4.5 4.5 0 0116 16H5z" />,
-  book: (
-    <>
-      <rect x="3" y="2" width="14" height="16" rx="2" />
-      <path d="M7 6h6M7 10h6M7 14h3" />
-    </>
-  ),
-  code: <path d="M7 5L3 10l4 5M13 5l4 5-4 5M11 3l-2 14" />,
-  webhook: (
-    <>
-      <path d="M8 2L6 5h3L7 12" />
-      <circle cx="14" cy="14" r="4" />
-    </>
-  ),
+const ICONS: Record<string, React.ElementType> = {
+  cloud: Cloud,
+  book: NotionLogo,
+  code: GithubLogo,
+  webhook: WebhooksLogo,
 };
 
 function Icon({ name }: { name: string }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {ICONS[name] ?? <circle cx="10" cy="10" r="7" />}
-    </svg>
-  );
+  const C = ICONS[name] ?? PlugsConnected;
+  return <C size={20} aria-hidden="true" />;
 }
 
 type Status = "unavailable" | "disconnected" | "active" | "paused";
@@ -231,22 +220,12 @@ export default function ConnectorsPage() {
     setNotice((n) => ({ ...n, [c.id]: `${c.name} scollegato.` }));
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton />;
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto px-6 pb-8 pt-16 md:pt-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold mb-1">Connettori</h1>
+        <h1 className="text-2xl font-semibold tracking-tight mb-1">Connettori</h1>
         <p className="text-sm mb-6" style={{ color: "var(--color-text-secondary)" }}>
           Collega i tuoi account: Tarry potrà usarli in chat quando glielo chiedi.
         </p>
@@ -350,7 +329,7 @@ export default function ConnectorsPage() {
                       style={{ background: status === "active" ? "var(--color-accent)" : "var(--color-bg-tertiary)" }}
                     >
                       <span
-                        className="absolute top-0.5 h-4 w-4 rounded-md bg-white transition-all"
+                        className="absolute top-0.5 h-4 w-4 rounded-md bg-white transition-[left,background-color,opacity] duration-150"
                         style={{ left: status === "active" ? "calc(100% - 18px)" : "2px" }}
                       />
                     </button>

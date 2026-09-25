@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { PageSkeleton } from "@/components/page-skeleton";
 import type { Plugin, UserPlugin } from "@/types/database";
 
 interface PluginWithState extends Plugin {
@@ -84,23 +85,13 @@ export default function PluginsPage() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton />;
 
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto px-6 pb-8 pt-16 md:pt-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold mb-1">Plugin</h1>
+        <h1 className="text-2xl font-semibold tracking-tight mb-1">Plugin</h1>
         <p className="text-sm mb-6" style={{ color: "var(--color-text-secondary)" }}>
           Scegli quali strumenti Tarry può usare nelle risposte.
         </p>
@@ -155,7 +146,7 @@ export default function PluginsPage() {
                   }}
                 >
                   <span
-                    className="absolute top-0.5 h-4 w-4 rounded-md bg-white transition-all"
+                    className="absolute top-0.5 h-4 w-4 rounded-md bg-white transition-[left,background-color,opacity] duration-150"
                     style={{
                       left: p.userEnabled ? "calc(100% - 18px)" : "2px",
                     }}

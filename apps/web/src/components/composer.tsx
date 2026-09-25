@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ArrowUp, FileText, Paperclip, X } from "@phosphor-icons/react";
 import { useChatStore } from "@/lib/store";
 import type { Message } from "@/types/database";
 
@@ -39,15 +40,6 @@ interface PendingFile {
   preview?: string;
 }
 
-function FileIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 1h4l4 4v7a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" />
-      <path d="M8 1v4h4" />
-    </svg>
-  );
-}
-
 export function Composer() {
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
@@ -63,8 +55,16 @@ export function Composer() {
     addMessage,
     setGenerating,
     isGenerating,
-    setMessages,
+    pendingPrompt,
+    setPendingPrompt,
   } = useChatStore();
+
+  useEffect(() => {
+    if (!pendingPrompt) return;
+    setInput(pendingPrompt);
+    setPendingPrompt(null);
+    textareaRef.current?.focus();
+  }, [pendingPrompt, setPendingPrompt]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -296,8 +296,7 @@ export function Composer() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t px-4 py-3"
-      style={{ borderColor: "var(--color-border-light)" }}
+      className="px-4 pb-4 pt-2"
     >
       <div className="mx-auto max-w-2xl">
         {pendingFiles.length > 0 && (
@@ -305,11 +304,8 @@ export function Composer() {
             {pendingFiles.map((pf, i) => (
               <div
                 key={i}
-                className="relative flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs"
-                style={{
-                  background: "var(--color-bg-secondary)",
-                  border: "1px solid var(--color-border-light)",
-                }}
+                className="relative flex items-center gap-2 rounded-lg px-2 py-1 text-xs"
+                style={{ background: "var(--color-bubble)" }}
               >
                 {pf.preview ? (
                   <img
@@ -318,9 +314,7 @@ export function Composer() {
                     className="h-8 w-8 rounded object-cover"
                   />
                 ) : (
-                  <span style={{ color: "var(--color-text-tertiary)" }}>
-                    <FileIcon />
-                  </span>
+                  <FileText size={16} aria-hidden="true" style={{ color: "var(--color-text-tertiary)" }} />
                 )}
                 <span className="max-w-[120px] truncate" style={{ color: "var(--color-text-secondary)" }}>
                   {pf.file.name}
@@ -332,9 +326,7 @@ export function Composer() {
                   className="ml-1 rounded p-0.5 transition-colors"
                   style={{ color: "var(--color-text-tertiary)" }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M3 3l6 6M9 3l-6 6" />
-                  </svg>
+                  <X size={12} aria-hidden="true" />
                 </button>
               </div>
             ))}
@@ -342,16 +334,17 @@ export function Composer() {
         )}
 
         {uploadError && (
-          <p className="text-xs mb-2" style={{ color: "var(--color-rose)" }}>
+          <p role="alert" className="mb-2 text-xs" style={{ color: "var(--color-rose)" }}>
             {uploadError}
           </p>
         )}
 
         <div
-          className="flex items-end gap-2 rounded-xl px-4 py-2"
+          className="flex items-end gap-2 rounded-2xl p-2 transition-[border-color] duration-150 focus-within:border-[var(--color-focus)]"
           style={{
-            background: "var(--color-bg-secondary)",
+            background: "var(--color-surface)",
             border: "1px solid var(--color-border)",
+            boxShadow: "var(--shadow-raised)",
           }}
         >
           <input
@@ -366,42 +359,38 @@ export function Composer() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isGenerating || uploading || pendingFiles.length >= MAX_FILES_PER_MESSAGE}
-            className="shrink-0 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors disabled:opacity-30"
-            style={{ color: "var(--color-text-tertiary)" }}
+            className="btn-ghost h-9 w-9 shrink-0 p-0"
             title="Allega file o immagine (PDF, Word, Excel, testo, CSV, JSON, immagini, max 10 MB)"
             aria-label="Allega file"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15.5 9.5l-6.4 6.4a4 4 0 01-5.6-5.6l6.4-6.4a2.7 2.7 0 013.8 3.8L7.3 14.1a1.3 1.3 0 01-1.9-1.9l5.7-5.7" />
-            </svg>
+            <Paperclip size={18} aria-hidden="true" />
           </button>
           <textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Scrivi un messaggio..."
+            placeholder="Chiedi qualcosa a Tarry"
+            aria-label="Messaggio"
             rows={1}
             maxLength={16000}
-            className="flex-1 resize-none bg-transparent py-1 text-sm outline-none"
+            className="flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none"
             style={{ color: "var(--color-text)" }}
             disabled={isGenerating}
           />
           <button
             type="submit"
             disabled={isGenerating || uploading || (!input.trim() && pendingFiles.length === 0)}
-            className="shrink-0 inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-all disabled:opacity-30"
-            style={{ background: "var(--color-accent)" }}
+            className="btn-primary h-9 w-9 shrink-0 p-0"
+            aria-label={isGenerating || uploading ? "Invio in corso" : "Invia"}
           >
             {isGenerating || uploading ? (
               <span
                 className="inline-block h-1 w-4 rounded-sm"
-                style={{ background: "white", animation: "pulse-soft 1s ease-in-out infinite" }}
+                style={{ background: "currentColor", animation: "pulse-soft 1s ease-in-out infinite" }}
               />
             ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 8h12M10 4l4 4-4 4" />
-              </svg>
+              <ArrowUp size={18} weight="bold" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -409,7 +398,7 @@ export function Composer() {
           className="mt-2 text-center text-xs"
           style={{ color: "var(--color-text-tertiary)" }}
         >
-          Tarry puo commettere errori. Verifica le informazioni importanti.
+          Tarry può sbagliare. Controlla le informazioni importanti.
         </p>
       </div>
     </form>

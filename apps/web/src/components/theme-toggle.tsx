@@ -1,42 +1,65 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "@phosphor-icons/react";
 
-export function ThemeToggle() {
+// Without this, every color transition on the page fires at once and the theme swap smears.
+function withoutTransitions(change: () => void) {
+  const style = document.createElement("style");
+  style.textContent = "*,*::before,*::after{transition:none !important}";
+  document.head.appendChild(style);
+  change();
+  void document.body.offsetHeight;
+  requestAnimationFrame(() => style.remove());
+}
+
+export function applyTheme(dark: boolean) {
+  withoutTransitions(() => document.documentElement.classList.toggle("dark", dark));
+  try {
+    localStorage.setItem("tarry-theme", dark ? "dark" : "light");
+  } catch {}
+}
+
+export function useThemeState() {
   const [dark, setDark] = useState(false);
-
   useEffect(() => {
-    const stored = localStorage.getItem("tarry-theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDark = stored ? stored === "dark" : prefersDark;
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    setDark(document.documentElement.classList.contains("dark"));
   }, []);
-
   function toggle() {
     const next = !dark;
     setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("tarry-theme", next ? "dark" : "light");
+    applyTheme(next);
+  }
+  return { dark, toggle };
+}
+
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
+  const { dark, toggle } = useThemeState();
+  const label = dark ? "Passa al tema chiaro" : "Passa al tema scuro";
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        className="btn-ghost h-9 w-9 p-0"
+        aria-label={label}
+        title={label}
+      >
+        {dark ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+    );
   }
 
   return (
     <button
+      type="button"
       onClick={toggle}
-      className="btn-ghost w-full justify-start text-xs gap-2"
-      title={dark ? "Modalita chiara" : "Modalita scura"}
+      className="btn-ghost w-full justify-start rounded-lg text-sm"
+      aria-label={label}
     >
-      {dark ? (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--color-amber)" strokeWidth="1.5" strokeLinecap="round">
-          <circle cx="8" cy="8" r="3" />
-          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4" />
-        </svg>
-      ) : (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--color-violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 10a7 7 0 01-8-8 7 7 0 108 8z" />
-        </svg>
-      )}
-      {dark ? "Chiaro" : "Scuro"}
+      {dark ? <Sun size={18} /> : <Moon size={18} />}
+      {dark ? "Tema chiaro" : "Tema scuro"}
     </button>
   );
 }

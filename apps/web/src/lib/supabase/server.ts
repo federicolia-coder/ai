@@ -18,7 +18,7 @@ export async function createServerSupabaseClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Server Component — ignore
+            // Called from a Server Component, where cookies are read-only.
           }
         },
       },

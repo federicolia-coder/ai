@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { PageSkeleton } from "@/components/page-skeleton";
 import type { Usage, Subscription, Conversation } from "@/types/database";
 
 export default function DashboardPage() {
@@ -46,26 +47,16 @@ export default function DashboardPage() {
     return n.toString();
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite" }} />
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.15s" }} />
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-text-tertiary)", animation: "pulse-soft 1.2s ease-in-out infinite 0.3s" }} />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton />;
 
   const usedPercent = usage
     ? Math.min((usage.tokens_used / usage.token_limit) * 100, 100)
     : 0;
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto px-6 pb-8 pt-16 md:pt-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold mb-6">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight mb-6">Utilizzo</h1>
 
         {/* Usage card */}
         <div className="card mb-4">
@@ -77,13 +68,13 @@ export default function DashboardPage() {
           </h2>
           <div className="flex items-baseline justify-between mb-2">
             <span className="text-2xl font-bold">
-              {usage ? formatTokens(usage.tokens_used) : "—"}
+              {usage ? formatTokens(usage.tokens_used) : "…"}
             </span>
             <span
               className="text-sm"
               style={{ color: "var(--color-text-secondary)" }}
             >
-              / {usage ? formatTokens(usage.token_limit) : "—"} token
+              / {usage ? formatTokens(usage.token_limit) : "…"} token
             </span>
           </div>
           <div
@@ -91,13 +82,13 @@ export default function DashboardPage() {
             style={{ background: "var(--color-bg-tertiary)" }}
           >
             <div
-              className="h-full rounded-sm transition-all"
+              className="h-full rounded-sm transition-[width] duration-300"
               style={{
                 width: `${usedPercent}%`,
                 background:
                   usedPercent > 90
                     ? "var(--color-rose)"
-                    : "var(--color-accent)",
+                    : "var(--color-cta)",
               }}
             />
           </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { AuthShell, authErrorMessage } from "@/components/auth-shell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,13 +19,10 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setError(error.message);
+      setError(authErrorMessage(error.message));
       setLoading(false);
       return;
     }
@@ -34,92 +32,61 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center px-4"
-      style={{ background: "var(--color-bg)" }}
-    >
-      <div className="w-full max-w-sm">
-        <div className="flex justify-center mb-6">
-          <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
-            <circle cx="11" cy="14" r="2.5" fill="white" />
-            <circle cx="11.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
-            <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
-            <circle cx="21.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
-            <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+    <AuthShell>
+      <h1 className="text-3xl font-semibold tracking-tight">Bentornato</h1>
+      <p className="mt-2 text-base" style={{ color: "var(--color-text-secondary)" }}>
+        Accedi per riprendere le tue conversazioni.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <div>
+          <label htmlFor="email" className="mb-2 block text-sm font-medium">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="input-field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
-        <h1 className="text-2xl font-bold text-center mb-1" style={{ textWrap: "balance" }}>Bentornato</h1>
-        <p
-          className="text-center text-sm mb-8"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Accedi al tuo account Tarry
-        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium mb-1"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              className="input-field"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+        <div>
+          <label htmlFor="password" className="mb-2 block text-sm font-medium">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            minLength={8}
+            className="input-field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-1"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              className="input-field"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+        {error && (
+          <p role="alert" className="rounded-lg px-3 py-2 text-sm" style={{ background: "var(--color-rose-soft)", color: "var(--color-rose)" }}>
+            {error}
+          </p>
+        )}
 
-          {error && (
-            <p className="text-sm" style={{ color: "var(--color-rose)" }}>
-              {error}
-            </p>
-          )}
+        <button type="submit" className="btn-primary w-full" disabled={loading}>
+          {loading ? "Accesso in corso…" : "Accedi"}
+        </button>
+      </form>
 
-          <button type="submit" className="btn-primary w-full" disabled={loading}>
-            {loading ? "Accesso..." : "Accedi"}
-          </button>
-        </form>
-
-        <p
-          className="mt-6 text-center text-sm"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Non hai un account?{" "}
-          <Link
-            href="/signup"
-            className="font-medium"
-            style={{ color: "var(--color-accent-text)" }}
-          >
-            Registrati
-          </Link>
-        </p>
-      </div>
-    </div>
+      <p className="mt-8 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+        Non hai un account?{" "}
+        <Link href="/signup" className="font-semibold underline underline-offset-4" style={{ color: "var(--color-text)" }}>
+          Registrati gratis
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

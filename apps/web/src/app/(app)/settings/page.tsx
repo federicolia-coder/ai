@@ -182,9 +182,9 @@ function SettingsContent() {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto px-6 pb-8 pt-16 md:pt-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold mb-6">Impostazioni</h1>
+        <h1 className="text-2xl font-semibold tracking-tight mb-6">Impostazioni</h1>
 
         {checkoutMessage && (
           <div
@@ -392,7 +392,7 @@ function SettingsContent() {
                     style={{ background: "var(--color-bg-tertiary)" }}
                   >
                     <div
-                      className="h-full rounded-sm transition-all"
+                      className="h-full rounded-sm transition-[width] duration-300"
                       style={{
                         width: `${Math.min(
                           (usage.tokens_used / usage.token_limit) * 100,
@@ -459,7 +459,7 @@ function SettingsContent() {
                     className="text-xs font-sans font-medium mb-1"
                     style={{ color: "var(--color-amber)" }}
                   >
-                    Copia questa chiave — non verra piu mostrata
+                    Copia questa chiave ora: non verrà più mostrata.
                   </p>
                   {createdKey}
                 </div>

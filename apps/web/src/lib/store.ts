@@ -7,6 +7,7 @@ interface ChatState {
   messages: Message[];
   isGenerating: boolean;
   sidebarOpen: boolean;
+  pendingPrompt: string | null;
 
   setConversations: (c: Conversation[]) => void;
   setCurrentConversation: (id: string | null) => void;
@@ -15,6 +16,8 @@ interface ChatState {
   updateLastAssistantMessage: (content: string) => void;
   setGenerating: (v: boolean) => void;
   toggleSidebar: () => void;
+  setSidebarOpen: (v: boolean) => void;
+  setPendingPrompt: (v: string | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -23,6 +26,7 @@ export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isGenerating: false,
   sidebarOpen: true,
+  pendingPrompt: null,
 
   setConversations: (conversations) => set({ conversations }),
   setCurrentConversation: (id) => set({ currentConversationId: id }),
@@ -39,4 +43,6 @@ export const useChatStore = create<ChatState>((set) => ({
     }),
   setGenerating: (isGenerating) => set({ isGenerating }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+  setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+  setPendingPrompt: (pendingPrompt) => set({ pendingPrompt }),
 }));

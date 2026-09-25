@@ -1,641 +1,500 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  BracketsCurly,
+  Calculator,
+  Check,
+  FileCsv,
+  FileDoc,
+  FileImage,
+  FilePdf,
+  FileTxt,
+  FileXls,
+  GithubLogo,
+  Minus,
+  NotionLogo,
+  WebhooksLogo,
+} from "@phosphor-icons/react/dist/ssr";
+import { SiteNav } from "@/components/landing/site-nav";
+import { RevealObserver, TaglineReveal } from "@/components/landing/reveal";
+import { ChatDemo, type DemoScript } from "@/components/landing/chat-demo";
+import { CapabilityStack, type Capability } from "@/components/landing/capability-stack";
+import { Faq } from "@/components/landing/faq";
+import { TarryMark } from "@/components/tarry-mark";
 
-function TarryLogo({ size = 32 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
-      <circle cx="11" cy="14" r="2.5" fill="white" />
-      <circle cx="11.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
-      <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
-      <circle cx="21.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
-      <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function useScrollReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return { ref, visible };
-}
-
-function ScrollReveal({
-  children,
-  className = "",
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  const { ref, visible } = useScrollReveal();
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        transform: visible ? "translateY(0)" : "translateY(64px)",
-        opacity: visible ? 1 : 0,
-        filter: visible ? "blur(0)" : "blur(6px)",
-        transition: `all 800ms cubic-bezier(0.32, 0.72, 0, 1) ${delay}ms`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function TaglineReveal({ text }: { text: string }) {
-  const words = text.split(" ");
-  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const [activeWords, setActiveWords] = useState<Set<number>>(new Set());
-
-  useEffect(() => {
-    const observers: IntersectionObserver[] = [];
-    wordRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setActiveWords((prev) => new Set([...prev, i]));
-            observer.unobserve(el);
-          }
-        },
-        { threshold: 0.5, rootMargin: "-10% 0px -10% 0px" }
-      );
-      observer.observe(el);
-      observers.push(observer);
-    });
-    return () => observers.forEach((o) => o.disconnect());
-  }, []);
-
-  return (
-    <p className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight max-w-[680px] mx-auto" style={{ textWrap: "balance" }}>
-      {words.map((word, i) => (
-        <span
-          key={i}
-          ref={(el) => { wordRefs.current[i] = el; }}
-          style={{
-            color: activeWords.has(i) ? "var(--color-text)" : "var(--color-text-tertiary)",
-            transition: `color 700ms cubic-bezier(0.32, 0.72, 0, 1)`,
-          }}
-        >
-          {word}{" "}
-        </span>
-      ))}
+const heroScript: DemoScript = {
+  attachment: "preventivo-cucina.pdf · 184 KB",
+  question: "Nel preventivo che ti ho mandato, qual è il totale con l'IVA al 22%?",
+  steps: [
+    { tool: "file", label: "Lettura file", detail: "preventivo-cucina.pdf", result: "Imponibile: 3.480,00 €" },
+    { tool: "calculate", label: "Calcolo", detail: "3.480 × 1,22", result: "3.480 × 1,22 = 4.245,60" },
+  ],
+  answer: (
+    <p>
+      Il totale con IVA al 22% è <strong>4.245,60 €</strong>. L&apos;imponibile nel preventivo è 3.480,00 € e
+      l&apos;IVA vale 765,60 €.
     </p>
-  );
-}
+  ),
+};
 
-const features = [
+const capabilities: Capability[] = [
   {
-    title: "Calcoli in tempo reale",
-    desc: "Risolvi espressioni matematiche, conversioni e formule direttamente nella conversazione.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-        <rect x="4" y="3" width="16" height="18" rx="2" />
-        <path d="M9 8h6M12 5v6" />
-        <circle cx="8" cy="16" r="0.5" fill="currentColor" />
-        <circle cx="12" cy="16" r="0.5" fill="currentColor" />
-        <circle cx="16" cy="16" r="0.5" fill="currentColor" />
-      </svg>
-    ),
+    id: "web",
+    title: "Cerca sul web quando la risposta cambia",
+    body: "Orari, notizie, prezzi, risultati. Tarry cerca prima di rispondere e ti dice dove ha letto, così puoi verificare.",
+    script: {
+      question: "Che orari ha oggi la Pinacoteca di Brera?",
+      steps: [{ tool: "search", label: "Ricerca web", detail: "orari Pinacoteca di Brera oggi", result: "3 fonti trovate" }],
+      answer: (
+        <p>
+          Ho trovato gli orari sul sito ufficiale del museo e su due guide aggiornate. Te li riporto con i link alle
+          fonti, così puoi controllarli prima di uscire.
+        </p>
+      ),
+    },
   },
   {
-    title: "Ricerca dal web",
-    desc: "Cerca informazioni aggiornate e le integra nelle risposte, con fonti verificabili.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-        <circle cx="11" cy="11" r="7" />
-        <path d="M16 16l4 4" />
-      </svg>
-    ),
+    id: "calc",
+    title: "Fa i conti con una calcolatrice vera",
+    body: "Percentuali, IVA, divisioni tra coinquilini, conversioni. Il numero arriva da un calcolo, non da una stima del modello.",
+    script: {
+      question: "Dividi 1.270 € di affitto in tre. Giulia ha la stanza grande e paga il 40%.",
+      steps: [
+        { tool: "calculate", label: "Calcolo", detail: "1.270 × 0,40", result: "1.270 × 0,40 = 508,00" },
+        { tool: "calculate", label: "Calcolo", detail: "(1.270 − 508) ÷ 2", result: "762 ÷ 2 = 381,00" },
+      ],
+      answer: (
+        <p>
+          Giulia paga <strong>508,00 €</strong>, voi due <strong>381,00 €</strong> a testa. Il totale torna a
+          1.270,00 €.
+        </p>
+      ),
+    },
   },
   {
-    title: "Plugin estensibili",
-    desc: "Architettura modulare: installa solo quello che ti serve, disattiva il resto.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="4" y="4" width="16" height="16" rx="3" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    ),
+    id: "file",
+    title: "Legge i file che alleghi",
+    body: "PDF, Word, Excel, CSV e testo fino a 10 MB. Chiedi un riassunto o cerca un dato preciso in un documento lungo.",
+    script: {
+      attachment: "spese-casa-2026.xlsx · 38 KB",
+      question: "Qual è stato il mese con la spesa più alta?",
+      steps: [{ tool: "file", label: "Lettura file", detail: "spese-casa-2026.xlsx", result: "12 righe, 4 colonne" }],
+      answer: (
+        <p>
+          <strong>Marzo</strong>, con 1.284,30 €. La voce che pesa di più è il riscaldamento: 412,00 €.
+        </p>
+      ),
+    },
   },
   {
-    title: "API personali",
-    desc: "Genera chiavi API e integra Tarry nei tuoi workflow e nelle tue applicazioni.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 6L4 12l4 6" />
-        <path d="M16 6l4 6-4 6" />
-        <line x1="14" y1="4" x2="10" y2="20" />
-      </svg>
-    ),
+    id: "connectors",
+    title: "Lavora dentro i tuoi strumenti",
+    body: "Collega GitHub o Notion dalla pagina Connettori. Tarry legge repository, issue e pagine solo quando glielo chiedi.",
+    script: {
+      question: "Quali issue sono ancora aperte su testard/sito?",
+      steps: [{ tool: "github", label: "GitHub", detail: "testard/sito, issue aperte", result: "2 issue aperte" }],
+      answer: (
+        <ul className="space-y-1">
+          <li>
+            <strong>#42</strong> Il menu non si chiude su iPhone
+          </li>
+          <li>
+            <strong>#39</strong> Aggiornare i prezzi nella pagina
+          </li>
+        </ul>
+      ),
+    },
   },
 ];
 
-const steps = [
-  {
-    num: "01",
-    title: "Crea un account",
-    desc: "Registrati in 30 secondi. Nessuna carta di credito richiesta per iniziare.",
-  },
-  {
-    num: "02",
-    title: "Scrivi la tua domanda",
-    desc: "Tarry comprende italiano, inglese e codice. Scrivi come parleresti a un collega.",
-  },
-  {
-    num: "03",
-    title: "Ottieni risposte precise",
-    desc: "Tarry usa i suoi strumenti per cercare dati, calcolare e rispondere con contesto.",
-  },
+const formats = [
+  { icon: FilePdf, name: "PDF", note: "Con testo selezionabile" },
+  { icon: FileDoc, name: "Word", note: "Documenti .docx" },
+  { icon: FileXls, name: "Excel", note: "Tutti i fogli .xlsx" },
+  { icon: FileCsv, name: "CSV", note: "Tabelle ed esportazioni" },
+  { icon: BracketsCurly, name: "JSON", note: "Dati strutturati" },
+  { icon: FileTxt, name: "Testo", note: "Anche Markdown" },
+  { icon: FileImage, name: "Immagini", note: "Salvate in chat, non ancora lette" },
+  { icon: GithubLogo, name: "GitHub", note: "Repository, issue e file" },
+  { icon: NotionLogo, name: "Notion", note: "Ricerca e lettura pagine" },
+  { icon: WebhooksLogo, name: "Webhook", note: "Invio su tua richiesta" },
 ];
 
-const plans = [
-  {
-    name: "Free",
-    tokens: "100K",
-    price: "0",
-    features: ["100.000 token al mese", "Plugin base", "5 conversazioni"],
-  },
-  {
-    name: "Plus",
-    tokens: "2M",
-    price: "9",
-    highlight: true,
-    features: [
-      "2.000.000 token al mese",
-      "Tutti i plugin",
-      "Conversazioni illimitate",
-      "Upload file",
-      "Accesso API",
-    ],
-  },
-  {
-    name: "Pro",
-    tokens: "10M",
-    price: "29",
-    features: [
-      "10.000.000 token al mese",
-      "Tutti i plugin",
-      "Tutto illimitato",
-      "Supporto prioritario",
-      "Integrazioni personalizzate",
-    ],
-  },
+type Cell = string | boolean;
+const plans = ["Free", "Plus", "Pro"] as const;
+const planRows: { label: string; values: [Cell, Cell, Cell] }[] = [
+  { label: "Token al mese", values: ["100.000", "2.000.000", "10.000.000"] },
+  { label: "Ricerca web, calcoli e file", values: [true, true, true] },
+  { label: "Connettori GitHub, Notion e webhook", values: [true, true, true] },
+  { label: "Supporto prioritario", values: [false, false, true] },
 ];
+const planPrices = ["0 €", "9 €", "29 €"];
 
-const faqItems = [
+const faqs = [
   {
-    q: "Cos'e Tarry?",
-    a: "Tarry e un assistente AI sviluppato da TestardStudios. Usa un modello linguistico locale con strumenti integrati come ricerca web, calcolatrice e un sistema di plugin.",
+    q: "Cos'è Tarry?",
+    a: "Un assistente AI creato da TestardStudios. Risponde in italiano e usa strumenti veri: ricerca web, calcolatrice, lettura dei file e connettori a GitHub e Notion.",
   },
   {
     q: "Devo pagare per usarlo?",
-    a: "No. Il piano Free include 100.000 token al mese, sufficienti per decine di conversazioni. Puoi passare a Plus o Pro quando hai bisogno di piu capacita.",
+    a: "No. Il piano Free include 100.000 token al mese e tutti gli strumenti. Plus e Pro aumentano i token disponibili, e Pro aggiunge il supporto prioritario.",
   },
   {
-    q: "Come funzionano i token?",
-    a: "Ogni messaggio consuma token in base alla lunghezza. Il conteggio include sia la domanda che la risposta. Il limite si resetta ogni mese.",
+    q: "Cosa sono i token?",
+    a: "Sono i pezzi di testo che il modello legge e scrive. Ogni messaggio consuma token per la domanda e per la risposta. Il limite si azzera ogni mese.",
   },
   {
-    q: "Posso usare Tarry per il codice?",
-    a: "Si. Tarry formatta il codice con syntax highlighting, spiega gli errori e puo cercare documentazione aggiornata tramite la ricerca web.",
+    q: "Quali file posso allegare?",
+    a: "PDF, Word, Excel, CSV, JSON, testo e Markdown fino a 10 MB, fino a 5 per messaggio. Le immagini si possono allegare, ma il modello attuale legge solo testo e non ne vede il contenuto.",
+  },
+  {
+    q: "Come collego GitHub o Notion?",
+    a: "Dalla pagina Connettori incolli un token di GitHub o la chiave di un'integrazione Notion. Tarry la verifica subito e, una volta salvata, nemmeno la pagina può rileggerla.",
   },
   {
     q: "I miei dati sono al sicuro?",
-    a: "Le conversazioni sono salvate nel tuo account e non vengono condivise. Il modello gira su infrastruttura privata, non su API di terze parti.",
+    a: "Le conversazioni restano nel tuo account e non vengono condivise. Il modello gira su un server privato, non tramite API di terze parti.",
   },
   {
-    q: "Come funziona l'API?",
-    a: "Genera una chiave API dalle impostazioni del tuo account. Puoi inviare richieste POST con il tuo messaggio e ricevere la risposta in JSON. La documentazione completa e disponibile nella dashboard.",
+    q: "Posso usare Tarry per il codice?",
+    a: "Sì. Tarry formatta il codice, spiega gli errori e può cercare documentazione aggiornata sul web. Con GitHub collegato legge anche i file dei tuoi repository.",
   },
   {
-    q: "Posso cancellare l'abbonamento?",
-    a: "Si, in qualsiasi momento dalla pagina impostazioni. Continuerai ad avere accesso fino alla fine del periodo gia pagato.",
-  },
-  {
-    q: "Quali lingue supporta?",
-    a: "Tarry comprende e risponde in italiano e inglese. Il supporto per altre lingue dipende dal modello ed e in continuo miglioramento.",
+    q: "Posso disdire l'abbonamento?",
+    a: "Sì, in qualsiasi momento dalle impostazioni. Mantieni l'accesso fino alla fine del periodo già pagato.",
   },
 ];
 
-function FAQItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
+function PlanCell({ value }: { value: Cell }) {
+  if (value === true) return <Check size={20} aria-label="Incluso" style={{ color: "var(--color-teal)" }} />;
+  if (value === false) return <Minus size={20} aria-label="Non incluso" style={{ color: "var(--color-text-tertiary)" }} />;
+  return <span className="tabular-nums">{value}</span>;
+}
 
+function SectionHead({ title, lede }: { title: string; lede?: string }) {
   return (
-    <div
-      className="border-b last:border-0"
-      style={{ borderColor: "var(--color-border)" }}
-    >
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left"
-        style={{ transition: "all 700ms cubic-bezier(0.32, 0.72, 0, 1)" }}
-      >
-        <span className="text-base font-semibold pr-4">{q}</span>
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          className="shrink-0"
-          style={{
-            transform: open ? "rotate(45deg)" : "rotate(0deg)",
-            transition: "transform 700ms cubic-bezier(0.32, 0.72, 0, 1)",
-            color: "var(--color-text-tertiary)",
-          }}
-        >
-          <path d="M10 4v12M4 10h12" />
-        </svg>
-      </button>
-      <div
-        style={{
-          maxHeight: open ? "200px" : "0",
-          opacity: open ? 1 : 0,
-          overflow: "hidden",
-          transition: "all 700ms cubic-bezier(0.32, 0.72, 0, 1)",
-        }}
-      >
-        <p
-          className="text-sm pb-5"
-          style={{ color: "var(--color-text-secondary)", textWrap: "pretty" }}
-        >
-          {a}
+    <div className="reveal max-w-2xl">
+      <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h2>
+      {lede && (
+        <p className="mt-4 text-lg" style={{ color: "var(--color-text-secondary)" }}>
+          {lede}
         </p>
-      </div>
+      )}
     </div>
   );
 }
 
 export default function LandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 btn-primary">
+    <>
+      <a href="#contenuto" className="btn-primary sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60]">
         Vai al contenuto
       </a>
+      <SiteNav />
+      <RevealObserver />
 
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-4 py-4 max-w-5xl mx-auto">
-        <Link href="/" className="flex items-center gap-2.5">
-          <TarryLogo size={28} />
-          <span className="text-lg font-bold tracking-tight">Tarry</span>
-        </Link>
+      <main id="contenuto">
+        {/* Hook */}
+        <section className="mx-auto mt-12 grid max-w-6xl items-center gap-16 px-6 py-24 lg:mt-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+          <div>
+            <h1 className="reveal max-w-[680px] text-4xl font-semibold tracking-tight sm:text-5xl">
+              Un chatbot <br className="hidden lg:block" />
+              risponde a memoria. <br className="hidden sm:block" />
+              <span
+                className="underline decoration-[6px] underline-offset-[10px]"
+                style={{ textDecorationColor: "var(--color-brand)", textDecorationSkipInk: "none" }}
+              >
+                Tarry controlla.
+              </span>
+            </h1>
+            <p
+              className="reveal mt-6 max-w-[680px] text-lg"
+              style={{ color: "var(--color-text-secondary)", transitionDelay: "100ms" }}
+            >
+              Prima di risponderti cerca sul web, fa i calcoli con una calcolatrice vera e legge i file che alleghi. E ti
+              mostra ogni passaggio.
+            </p>
+            <div className="reveal mt-8 flex flex-wrap items-center gap-4" style={{ transitionDelay: "200ms" }}>
+              <Link href="/signup" className="btn-primary">
+                Prova Tarry gratis
+                <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <a href="#come-funziona" className="btn-ghost text-base">
+                Guarda come funziona
+              </a>
+            </div>
+            <p className="reveal mt-6 text-sm" style={{ color: "var(--color-text-tertiary)", transitionDelay: "200ms" }}>
+              Piano gratuito con 100.000 token al mese. Nessuna carta richiesta.
+            </p>
+          </div>
 
-        {/* Desktop nav */}
-        <div className="hidden sm:flex items-center gap-2">
-          <a href="#features" className="btn-ghost text-sm">Funzionalita</a>
-          <a href="#plans" className="btn-ghost text-sm">Prezzi</a>
-          <a href="#faq" className="btn-ghost text-sm">FAQ</a>
-          <Link href="/login" className="btn-ghost text-sm">Accedi</Link>
-          <Link href="/signup" className="btn-primary text-sm">Inizia gratis</Link>
-        </div>
+          <div className="reveal" style={{ transitionDelay: "300ms" }}>
+            <ChatDemo script={heroScript} label="Conversazione di esempio: totale di un preventivo con IVA" play />
+            <p className="mt-4 text-center text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+              Conversazione di esempio. Nell&apos;app vedi gli stessi passaggi.
+            </p>
+          </div>
+        </section>
 
-        {/* Mobile hamburger */}
-        <button
-          className="sm:hidden relative w-8 h-8 flex items-center justify-center"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? "Chiudi menu" : "Apri menu"}
-        >
-          <span
-            className="absolute w-5 h-0.5 rounded-full"
-            style={{
-              background: "var(--color-text)",
-              transform: mobileMenuOpen ? "rotate(45deg)" : "translateY(-4px)",
-              transition: "all 700ms cubic-bezier(0.32, 0.72, 0, 1)",
-            }}
+        {/* Problem */}
+        <section className="mx-auto max-w-6xl px-6 py-24">
+          <SectionHead
+            title="Stessa domanda, due risposte."
+            lede="Un modello linguistico prevede la parola successiva. Non fa i conti e non sa cosa è successo stamattina. Quando serve un dato giusto, bisogna controllarlo."
           />
-          <span
-            className="absolute w-5 h-0.5 rounded-full"
-            style={{
-              background: "var(--color-text)",
-              transform: mobileMenuOpen ? "rotate(-45deg)" : "translateY(4px)",
-              transition: "all 700ms cubic-bezier(0.32, 0.72, 0, 1)",
-            }}
-          />
-        </button>
-      </nav>
-
-      {/* Mobile menu overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 sm:hidden"
-          style={{
-            background: "var(--color-bg)",
-            backdropFilter: "blur(24px)",
-          }}
-        >
-          <button
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-label="Chiudi menu"
-          >
-            <span className="absolute w-5 h-0.5 rounded-full rotate-45" style={{ background: "var(--color-text)" }} />
-            <span className="absolute w-5 h-0.5 rounded-full -rotate-45" style={{ background: "var(--color-text)" }} />
-          </button>
-          {[
-            { href: "#features", label: "Funzionalita" },
-            { href: "#plans", label: "Prezzi" },
-            { href: "#faq", label: "FAQ" },
-            { href: "/login", label: "Accedi" },
-          ].map((item, i) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-2xl font-semibold"
+          <div className="mt-12 grid gap-6 md:grid-cols-2">
+            <figure
+              className="reveal rounded-2xl p-6 sm:p-8"
+              style={{ border: "1px solid var(--color-border)" }}
+            >
+              <figcaption className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>
+                Solo il modello
+              </figcaption>
+              <p className="mt-6 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                Quanto fa il 17,5% di 2.340 €?
+              </p>
+              <p className="mt-4 text-2xl font-semibold tabular-nums">Circa 405 €.</p>
+              <p
+                className="mt-6 inline-block rounded-full px-3 py-1 text-xs font-semibold"
+                style={{ background: "var(--color-rose-soft)", color: "var(--color-rose)" }}
+              >
+                Una stima, sbagliata di 4,50 €
+              </p>
+            </figure>
+            <figure
+              className="reveal rounded-2xl p-6 sm:p-8"
               style={{
-                animation: `fade-in 400ms cubic-bezier(0.32, 0.72, 0, 1) ${100 + i * 50}ms both`,
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border-light)",
+                boxShadow: "var(--shadow-float)",
+                transitionDelay: "100ms",
               }}
             >
-              {item.label}
-            </a>
-          ))}
-          <Link
-            href="/signup"
-            onClick={() => setMobileMenuOpen(false)}
-            className="btn-primary text-base px-8 py-3"
-            style={{ animation: "fade-in 400ms cubic-bezier(0.32, 0.72, 0, 1) 350ms both" }}
-          >
-            Inizia gratis
-          </Link>
-        </div>
-      )}
-
-      <main id="main">
-        {/* Hero */}
-        <section className="mx-auto max-w-3xl px-4 pt-24 pb-32 text-center">
-          <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm mb-8"
-            style={{
-              background: "var(--color-accent-soft)",
-              color: "var(--color-accent-text)",
-              border: "1px solid var(--color-accent)",
-            }}
-          >
-            <TarryLogo size={16} />
-            <span className="font-medium">AI Assistant by TestardStudios</span>
+              <figcaption className="flex items-center gap-2 text-sm font-semibold">
+                <TarryMark size={20} />
+                Tarry
+              </figcaption>
+              <p className="mt-6 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                Quanto fa il 17,5% di 2.340 €?
+              </p>
+              <div
+                className="mt-4 flex items-center gap-3 rounded-lg px-3 py-2 text-xs"
+                style={{ border: "1px solid var(--color-border-light)", color: "var(--color-text-secondary)" }}
+              >
+                <Calculator size={16} aria-hidden="true" style={{ color: "var(--color-text)" }} />
+                <span className="font-semibold" style={{ color: "var(--color-text)" }}>
+                  Calcolo
+                </span>
+                <span className="tabular-nums">2.340 × 0,175 = 409,50</span>
+              </div>
+              <p className="mt-4 text-2xl font-semibold tabular-nums">409,50 €.</p>
+            </figure>
           </div>
-
-          <h1
-            className="hero-gradient-text text-5xl sm:text-6xl font-bold tracking-tight leading-tight max-w-[680px] mx-auto"
-            style={{ textWrap: "balance" }}
-          >
-            Il tuo assistente AI
-            <br />
-            che usa strumenti veri
-          </h1>
-          <p
-            className="mt-6 text-lg max-w-xl mx-auto"
-            style={{ color: "var(--color-text-secondary)", textWrap: "pretty" }}
-          >
-            Tarry cerca dal web, calcola, esegue plugin e risponde con contesto.
-            Non un chatbot qualsiasi: un assistente che agisce.
-          </p>
-          <div className="mt-10 flex items-center justify-center gap-3">
-            <Link href="/signup" className="btn-primary px-8 py-3 text-base">
-              Prova Tarry gratis
-            </Link>
-            <a href="#plans" className="btn-secondary px-6 py-3 text-sm">
-              Vedi i piani
-            </a>
-          </div>
-          <p
-            className="mt-6 text-sm"
-            style={{ color: "var(--color-text-tertiary)" }}
-          >
-            Nessuna carta di credito richiesta
-          </p>
         </section>
 
-        {/* Features */}
-        <section
-          id="features"
-          className="py-24"
-          style={{ background: "var(--color-bg-secondary)" }}
-        >
-          <div className="mx-auto max-w-4xl px-4">
-            <ScrollReveal>
-              <p className="text-sm font-semibold text-center mb-3" style={{ color: "var(--color-accent-text)" }}>
-                Funzionalita
-              </p>
-              <h2 className="text-3xl font-bold text-center mb-4" style={{ textWrap: "balance" }}>
-                Strumenti integrati, non promesse
-              </h2>
-              <p className="text-base text-center max-w-lg mx-auto mb-16" style={{ color: "var(--color-text-secondary)" }}>
-                Tarry non si limita a generare testo. Ogni risposta puo usare strumenti reali per darti dati concreti.
-              </p>
-            </ScrollReveal>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {features.map((f, i) => (
-                <ScrollReveal key={f.title} delay={i * 100}>
-                  <div className="card flex gap-4 items-start h-full">
-                    <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-                      style={{ background: "var(--color-bg-secondary)", color: "var(--color-text)" }}
+        {/* Solution */}
+        <section id="come-funziona" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-24">
+          <SectionHead
+            title="Quattro strumenti, usati solo quando servono."
+            lede="Tarry decide da solo se cercare, calcolare o leggere. Tu scrivi la domanda come la faresti a un collega."
+          />
+          <div className="mt-16">
+            <CapabilityStack items={capabilities} />
+          </div>
+        </section>
+
+        {/* Tagline */}
+        <section className="mx-auto max-w-6xl px-6 py-24" aria-label="In sintesi">
+          <TaglineReveal
+            lines={[
+              "Ogni risposta ti dice",
+              "come ci è arrivata.",
+              "Se Tarry ha cercato,",
+              "calcolato o letto un file,",
+              "lo vedi scritto sopra.",
+            ]}
+          />
+        </section>
+
+        {/* Proof */}
+        <section id="cosa-legge" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-24">
+          <SectionHead
+            title="Legge quello che usi già."
+            lede="File fino a 10 MB, fino a 5 per messaggio. I connettori verificano le credenziali prima di salvarle."
+          />
+          <ul
+            className="reveal mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-2xl sm:grid-cols-3 lg:grid-cols-5"
+            style={{ background: "var(--color-border-light)", border: "1px solid var(--color-border-light)" }}
+          >
+            {formats.map(({ icon: Icon, name, note }) => (
+              <li key={name} className="p-6" style={{ background: "var(--color-surface)" }}>
+                <Icon size={28} aria-hidden="true" />
+                <p className="mt-4 text-base font-semibold">{name}</p>
+                <p className="mt-1 text-sm" style={{ color: "var(--color-text-tertiary)" }}>
+                  {note}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Pricing */}
+        <section id="prezzi" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-24">
+          <SectionHead
+            title="Stessi strumenti in ogni piano. Cambia quanto lo usi."
+            lede="I token contano domanda e risposta e si azzerano ogni mese. Parti gratis e passi a Plus o Pro dalle impostazioni, quando vuoi."
+          />
+
+          <div className="reveal mt-12 hidden overflow-hidden rounded-2xl md:block" style={{ border: "1px solid var(--color-border-light)", background: "var(--color-surface)" }}>
+            <table className="w-full text-left">
+              <caption className="sr-only">Confronto dei piani Free, Plus e Pro</caption>
+              <thead>
+                <tr>
+                  <td className="p-6" />
+                  {plans.map((p, i) => (
+                    <th
+                      key={p}
+                      scope="col"
+                      className="p-6 align-top"
+                      style={i === 1 ? { background: "var(--color-accent-soft)" } : undefined}
                     >
-                      {f.icon}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">{f.title}</h3>
-                      <p className="text-sm" style={{ color: "var(--color-text-secondary)", textWrap: "pretty" }}>
-                        {f.desc}
-                      </p>
-                    </div>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Tagline reveal */}
-        <section className="py-32 px-4">
-          <div className="mx-auto max-w-4xl text-center">
-            <TaglineReveal text="Un assistente AI che non si limita a parlare. Cerca, calcola, agisce." />
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section className="py-24 px-4" style={{ background: "var(--color-bg-secondary)" }}>
-          <div className="mx-auto max-w-3xl">
-            <ScrollReveal>
-              <p className="text-sm font-semibold text-center mb-3" style={{ color: "var(--color-accent-text)" }}>
-                Come funziona
-              </p>
-              <h2 className="text-3xl font-bold text-center mb-16" style={{ textWrap: "balance" }}>
-                Tre passaggi, zero configurazione
-              </h2>
-            </ScrollReveal>
-            <div className="space-y-12">
-              {steps.map((s, i) => (
-                <ScrollReveal key={s.num} delay={i * 150}>
-                  <div className="flex gap-6 items-start">
-                    <span
-                      className="text-3xl font-bold shrink-0 w-12"
-                      style={{ color: "var(--color-accent)" }}
-                    >
-                      {s.num}
-                    </span>
-                    <div>
-                      <h3 className="text-lg font-semibold mb-1">{s.title}</h3>
-                      <p className="text-sm" style={{ color: "var(--color-text-secondary)", textWrap: "pretty" }}>
-                        {s.desc}
-                      </p>
-                    </div>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Plans */}
-        <section className="py-24 px-4" id="plans">
-          <div className="mx-auto max-w-4xl">
-            <ScrollReveal>
-              <p className="text-sm font-semibold text-center mb-3" style={{ color: "var(--color-accent-text)" }}>
-                Prezzi
-              </p>
-              <h2 className="text-3xl font-bold text-center mb-4" style={{ textWrap: "balance" }}>
-                Inizia gratis, scala quando serve
-              </h2>
-              <p className="text-base text-center max-w-lg mx-auto mb-16" style={{ color: "var(--color-text-secondary)" }}>
-                Nessun costo nascosto. Upgrade e downgrade in qualsiasi momento.
-              </p>
-            </ScrollReveal>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {plans.map((p, i) => (
-                <ScrollReveal key={p.name} delay={i * 100}>
-                  <div
-                    className="card flex flex-col h-full"
-                    style={
-                      p.highlight
-                        ? { borderColor: "var(--color-accent)", borderWidth: "2px" }
-                        : undefined
-                    }
-                  >
-                    {p.highlight && (
-                      <span
-                        className="self-start text-xs font-semibold px-2.5 py-1 rounded-lg mb-3"
-                        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-text)" }}
-                      >
-                        Consigliato
+                      <span className="flex items-center gap-2 text-base font-semibold">
+                        {p}
+                        {i === 1 && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                            style={{ background: "var(--color-surface)", color: "var(--color-accent-text)" }}
+                          >
+                            Consigliato
+                          </span>
+                        )}
                       </span>
-                    )}
-                    <h3 className="font-bold text-lg">{p.name}</h3>
-                    <div className="flex items-baseline gap-0.5 mt-1 mb-6">
-                      <span className="text-4xl font-bold">&euro;{p.price}</span>
-                      <span className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>/mese</span>
-                    </div>
-                    <ul className="flex-1 space-y-3 mb-8">
-                      {p.features.map((f) => (
-                        <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-                            <path d="M4 8l3 3 5-5.5" stroke="var(--color-teal)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <Link
-                      href="/signup"
-                      className={`text-center py-3 ${p.highlight ? "btn-primary" : "btn-secondary"}`}
-                    >
-                      {p.name === "Free" ? "Inizia gratis" : `Scegli ${p.name}`}
-                    </Link>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
+                      <span className="mt-2 block text-4xl font-semibold tabular-nums tracking-tight">
+                        {planPrices[i]}
+                      </span>
+                      <span className="text-sm font-normal" style={{ color: "var(--color-text-tertiary)" }}>
+                        {i === 0 ? "per sempre" : "al mese"}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {planRows.map((row) => (
+                  <tr key={row.label} style={{ borderTop: "1px solid var(--color-border-light)" }}>
+                    <th scope="row" className="p-6 text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+                      {row.label}
+                    </th>
+                    {row.values.map((v, i) => (
+                      <td
+                        key={i}
+                        className="p-6 text-base font-semibold"
+                        style={i === 1 ? { background: "var(--color-accent-soft)" } : undefined}
+                      >
+                        <PlanCell value={v} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                <tr style={{ borderTop: "1px solid var(--color-border-light)" }}>
+                  <td className="p-6" />
+                  {plans.map((p, i) => (
+                    <td key={p} className="p-6" style={i === 1 ? { background: "var(--color-accent-soft)" } : undefined}>
+                      <Link href="/signup" className={i === 1 ? "btn-primary w-full" : "btn-secondary w-full text-base"}>
+                        {i === 0 ? "Inizia gratis" : `Inizia con ${p}`}
+                      </Link>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
           </div>
+
+          <ul className="mt-12 space-y-6 md:hidden">
+            {plans.map((p, i) => (
+              <li
+                key={p}
+                className="reveal rounded-2xl p-6"
+                style={{
+                  background: i === 1 ? "var(--color-accent-soft)" : "var(--color-surface)",
+                  border: "1px solid var(--color-border-light)",
+                }}
+              >
+                <p className="text-base font-semibold">{p}</p>
+                <p className="mt-2 text-4xl font-semibold tabular-nums tracking-tight">
+                  {planPrices[i]}{" "}
+                  <span className="text-sm font-normal" style={{ color: "var(--color-text-tertiary)" }}>
+                    {i === 0 ? "per sempre" : "al mese"}
+                  </span>
+                </p>
+                <dl className="mt-6 space-y-3 text-sm">
+                  {planRows.map((row) => (
+                    <div key={row.label} className="flex items-center justify-between gap-4">
+                      <dt style={{ color: "var(--color-text-secondary)" }}>{row.label}</dt>
+                      <dd className="font-semibold">
+                        <PlanCell value={row.values[i]} />
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <Link href="/signup" className={`mt-6 w-full ${i === 1 ? "btn-primary" : "btn-secondary text-base"}`}>
+                  {i === 0 ? "Inizia gratis" : `Inizia con ${p}`}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* FAQ */}
-        <section className="py-24 px-4" id="faq" style={{ background: "var(--color-bg-secondary)" }}>
-          <div className="mx-auto max-w-2xl">
-            <ScrollReveal>
-              <p className="text-sm font-semibold text-center mb-3" style={{ color: "var(--color-accent-text)" }}>
-                Domande frequenti
-              </p>
-              <h2 className="text-3xl font-bold text-center mb-16" style={{ textWrap: "balance" }}>
-                Tutto quello che devi sapere
-              </h2>
-            </ScrollReveal>
-            <ScrollReveal>
-              <div className="card">
-                {faqItems.map((item) => (
-                  <FAQItem key={item.q} q={item.q} a={item.a} />
-                ))}
-              </div>
-            </ScrollReveal>
+        <section id="domande" className="mx-auto grid max-w-6xl scroll-mt-24 gap-12 px-6 py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+          <div className="reveal">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl lg:sticky lg:top-24">Domande frequenti</h2>
+          </div>
+          <div className="reveal">
+            <Faq items={faqs} />
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section className="py-32 px-4 text-center">
-          <ScrollReveal>
-            <TarryLogo size={48} />
-            <h2 className="text-3xl sm:text-4xl font-bold mt-8 mb-4 max-w-[680px] mx-auto" style={{ textWrap: "balance" }}>
-              Pronto a provare un assistente
-              <br />
-              che fa davvero qualcosa?
+        {/* Close */}
+        <section className="mx-auto max-w-6xl px-6 py-24">
+          <div className="reveal flex flex-col items-start gap-6">
+            <TarryMark size={56} />
+            <h2 className="max-w-[680px] text-4xl font-semibold tracking-tight sm:text-5xl">
+              Fai la prima domanda a Tarry.
             </h2>
-            <p className="text-base mb-10 max-w-md mx-auto" style={{ color: "var(--color-text-secondary)" }}>
-              Crea il tuo account in 30 secondi. Nessuna carta di credito, nessun vincolo.
+            <p className="max-w-[680px] text-lg" style={{ color: "var(--color-text-secondary)" }}>
+              Il piano gratuito parte subito e non chiede la carta di credito.
             </p>
-            <Link href="/signup" className="btn-primary px-8 py-3 text-base">
-              Inizia gratis
+            <Link href="/signup" className="btn-primary mt-2">
+              Crea un account gratis
+              <ArrowRight size={18} aria-hidden="true" />
             </Link>
-          </ScrollReveal>
+          </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer
-        className="border-t py-8 px-4"
-        style={{ borderColor: "var(--color-border)" }}
-      >
-        <div className="mx-auto max-w-4xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <TarryLogo size={18} />
-            <span className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
-              Tarry AI &mdash; TestardStudios &copy; {new Date().getFullYear()}
-            </span>
-          </div>
-          <nav className="flex items-center gap-6 text-sm" style={{ color: "var(--color-text-tertiary)" }}>
-            <Link href="/legal/terms" className="hover:underline">Condizioni</Link>
-            <Link href="/legal/privacy" className="hover:underline">Privacy</Link>
-            <Link href="/legal/cookies" className="hover:underline">Cookie</Link>
+      <footer className="mx-auto max-w-6xl px-6 pb-12">
+        <div
+          className="flex flex-col gap-4 pt-8 text-sm sm:flex-row sm:items-center sm:justify-between"
+          style={{ borderTop: "1px solid var(--color-border)", color: "var(--color-text-tertiary)" }}
+        >
+          <p className="flex items-center gap-2">
+            <TarryMark size={20} />
+            Tarry è un progetto di TestardStudios. © 2026
+          </p>
+          <nav aria-label="Note legali" className="flex gap-6">
+            <Link href="/legal/terms" className="hover:underline">
+              Termini
+            </Link>
+            <Link href="/legal/privacy" className="hover:underline">
+              Privacy
+            </Link>
+            <Link href="/legal/cookies" className="hover:underline">
+              Cookie
+            </Link>
           </nav>
         </div>
       </footer>
-    </div>
+    </>
   );
 }

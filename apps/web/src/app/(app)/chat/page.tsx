@@ -5,19 +5,16 @@ import { Composer } from "@/components/composer";
 import { useChatStore } from "@/lib/store";
 
 export default function ChatPage() {
-  const { toggleSidebar } = useChatStore();
+  const { sidebarOpen, conversations, currentConversationId } = useChatStore();
+  const title = conversations.find((c) => c.id === currentConversationId)?.title ?? "Nuova conversazione";
 
   return (
-    <div className="flex flex-1 flex-col min-h-0">
-      {/* Header */}
+    <div className="flex min-h-0 flex-1 flex-col">
       <header
-        className="flex items-center gap-3 border-b px-4 py-2.5"
-        style={{ borderColor: "var(--color-border-light)" }}
+        className={`flex h-14 shrink-0 items-center px-4 ${sidebarOpen ? "md:px-6" : "pl-16"}`}
+        style={{ borderBottom: "1px solid var(--color-border-light)" }}
       >
-        <button onClick={toggleSidebar} className="btn-ghost px-2 py-1 text-sm">
-          &#9776;
-        </button>
-        <span className="text-sm font-medium">Chat</span>
+        <h1 className="truncate text-sm font-semibold">{title}</h1>
       </header>
 
       <ChatMessages />

@@ -1,27 +1,27 @@
 import Link from "next/link";
+import { TarryMark } from "@/components/tarry-mark";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="text-center">
-        <svg width="64" height="64" viewBox="0 0 32 32" fill="none" className="mx-auto mb-6">
-          <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
-          <circle cx="11" cy="14" r="2.5" fill="white" />
-          <circle cx="11.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
-          <circle cx="21" cy="14" r="2.5" fill="var(--color-violet)" />
-          <circle cx="21.5" cy="13.5" r="0.8" fill="white" opacity="0.9" />
-          <path d="M11 21c2.5 -2 7.5 -2 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-        <p className="text-5xl font-bold mb-2" style={{ color: "var(--color-text)" }}>
-          404
+    <main className="flex min-h-dvh items-center px-6">
+      <div className="mx-auto w-full max-w-xl">
+        <TarryMark size={56} mood="sad" />
+        <p className="mt-8 text-sm font-semibold" style={{ color: "var(--color-accent-text)" }}>
+          Errore 404
         </p>
-        <p className="text-base mb-8" style={{ color: "var(--color-text-secondary)" }}>
-          Questa pagina non esiste
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">Questa pagina non esiste.</h1>
+        <p className="mt-4 text-lg" style={{ color: "var(--color-text-secondary)" }}>
+          Il link potrebbe essere vecchio o scritto male. Ho cercato bene, promesso.
         </p>
-        <Link href="/" className="btn-primary px-6 py-3 text-base">
-          Torna alla home
-        </Link>
+        <div className="mt-8 flex flex-wrap gap-4">
+          <Link href="/" className="btn-primary">
+            Torna alla home
+          </Link>
+          <Link href="/chat" className="btn-ghost text-base">
+            Apri la chat
+          </Link>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
