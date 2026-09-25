@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 import re
+import threading
+from collections.abc import AsyncIterator
 from typing import Any
 
 from runtime.model.provider import ModelProvider
@@ -113,6 +115,7 @@ def _tools_prompt(tool_defs: list[dict[str, Any]]) -> str:
         json.dumps(
             {"type": "function", "function": {"name": td["name"], "description": td["description"], "parameters": td["parameters"]}},
             ensure_ascii=False,
+            separators=(",", ":"),
         )
         for td in tool_defs
     ]
@@ -154,10 +157,100 @@ def _format_tool_result(tool_name: str, result: dict) -> str:
     return text
 
 
+TAG = "<tool_call>"
+
+
+class StreamFilter:
+    """Decides, while tokens arrive, which text is answer (shown live) and which is a tool call (hidden).
+
+    Answer text is emitted as soon as it cannot be the start of a <tool_call> tag. If a tag shows up
+    after some text was already shown, a discard event tells the client to drop that draft.
+    """
+
+    def __init__(self) -> None:
+        self.text = ""
+        self.emitted = 0
+        self.mode = "undecided"  # undecided | text | tool
+
+    @property
+    def emitted_any(self) -> bool:
+        return self.emitted > 0
+
+    def feed(self, piece: str) -> list[dict[str, Any]]:
+        self.text += piece
+        return self._advance(final=False)
+
+    def finish(self) -> list[dict[str, Any]]:
+        return self._advance(final=True)
+
+    def _advance(self, final: bool) -> list[dict[str, Any]]:
+        if self.mode == "tool":
+            return []
+        if self.mode == "undecided":
+            head = self.text.lstrip()
+            if head.startswith(TAG):
+                self.mode = "tool"
+                return []
+            if TAG.startswith(head) and not final:
+                return []
+            self.mode = "text"
+            self.emitted = len(self.text) - len(head)
+        if self.text.find(TAG, self.emitted) != -1:
+            self.mode = "tool"
+            return [{"type": "discard"}] if self.emitted_any else []
+        # Hold back the last characters: they might be the beginning of a tag.
+        end = len(self.text) if final else max(self.emitted, len(self.text) - (len(TAG) - 1))
+        if end <= self.emitted:
+            return []
+        chunk = self.text[self.emitted:end]
+        self.emitted = end
+        return [{"type": "token", "text": chunk}]
+
+
 class AgentLoop:
     def __init__(self, model: ModelProvider, tools: ToolRegistry):
         self.model = model
         self.tools = tools
+
+    async def _stream(
+        self,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+        usage: dict[str, int],
+        cancel: threading.Event | None,
+    ) -> AsyncIterator[str]:
+        """Run the blocking model in a worker thread so the event loop (and other requests) stay responsive."""
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+        done = object()
+        stop = cancel or threading.Event()
+
+        def worker() -> None:
+            try:
+                for piece in self.model.stream(messages, max_tokens=max_tokens, temperature=temperature, usage=usage):
+                    loop.call_soon_threadsafe(queue.put_nowait, piece)
+                    if stop.is_set():
+                        break
+            except BaseException as e:  # re-raised on the event loop side
+                loop.call_soon_threadsafe(queue.put_nowait, e)
+            finally:
+                loop.call_soon_threadsafe(queue.put_nowait, done)
+
+        future = loop.run_in_executor(None, worker)
+        try:
+            while True:
+                item = await queue.get()
+                if item is done:
+                    break
+                if isinstance(item, BaseException):
+                    raise item
+                yield item
+        finally:
+            if cancel is None:
+                # Our own event: stops the worker at the next token if the consumer went away early.
+                stop.set()
+            await asyncio.shield(future)
 
     async def run(
         self,
@@ -166,13 +259,27 @@ class AgentLoop:
         max_tokens: int = 1024,
         context: ToolContext | None = None,
     ) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        async for event in self.run_events(messages, enabled_tools, max_tokens, context):
+            if event["type"] == "done":
+                result = event["result"]
+        return result
+
+    async def run_events(
+        self,
+        messages: list[dict[str, str]],
+        enabled_tools: list[str],
+        max_tokens: int = 1024,
+        context: ToolContext | None = None,
+        cancel: threading.Event | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Yield token / discard / step events, then exactly one done event with the final result."""
         context = context or ToolContext()
         tool_defs = self.tools.list_definitions(enabled_tools)
         enabled_names = {td["name"] for td in tool_defs}
         tools_used: list[str] = []
         steps: list[dict[str, Any]] = []
-        total_input = 0
-        total_output = 0
+        totals = {"input_tokens": 0, "output_tokens": 0}
         last_tool_result: str | None = None
 
         working_messages = [dict(m) for m in messages]
@@ -194,31 +301,51 @@ class AgentLoop:
         question = _last_user_text(messages)
         nudged = False
 
+        def add_usage(u: dict[str, int]) -> None:
+            totals["input_tokens"] += u.get("input_tokens", 0)
+            totals["output_tokens"] += u.get("output_tokens", 0)
+
+        def done(content: str) -> dict[str, Any]:
+            return {
+                "type": "done",
+                "result": {
+                    "content": content,
+                    "tools_used": tools_used,
+                    "steps": steps,
+                    "input_tokens": totals["input_tokens"],
+                    "output_tokens": totals["output_tokens"],
+                    "total_tokens": totals["input_tokens"] + totals["output_tokens"],
+                },
+            }
+
         for iteration in range(MAX_TOOL_CALLS + 2):
-            result = self.model.generate(
-                messages=working_messages,
-                max_tokens=max_tokens,
-                temperature=0.6,
-            )
-
-            total_input += result.get("input_tokens", 0)
-            total_output += result.get("output_tokens", 0)
-            content = result.get("content", "")
-
+            usage: dict[str, int] = {}
+            filt = StreamFilter()
+            async for piece in self._stream(working_messages, max_tokens, 0.6, usage, cancel):
+                for event in filt.feed(piece):
+                    yield event
+            add_usage(usage)
+            content = filt.text
             logger.info("Model output (iter %d): %s", iteration, content[:200])
 
             parsed = _parse_tool_call(content)
+            if not parsed:
+                for event in filt.finish():
+                    yield event
 
             if not parsed and tool_defs and not nudged and not tools_used and _should_nudge(content, question, enabled_names):
                 nudged = True
                 logger.info("No tool call in a reply that needs one; nudging once")
                 # The reminder is not kept in the transcript: the model retries from the same point.
+                retry_usage: dict[str, int] = {}
                 retry_messages = working_messages + [{"role": "user", "content": NUDGE}]
-                retry = self.model.generate(messages=retry_messages, max_tokens=max_tokens, temperature=0.2)
-                total_input += retry.get("input_tokens", 0)
-                total_output += retry.get("output_tokens", 0)
-                retry_content = retry.get("content", "")
+                retry_content = "".join(
+                    [p async for p in self._stream(retry_messages, max_tokens, 0.2, retry_usage, cancel)]
+                )
+                add_usage(retry_usage)
                 if _parse_tool_call(retry_content):
+                    if filt.emitted_any:
+                        yield {"type": "discard"}
                     content = retry_content
                     parsed = _parse_tool_call(content)
 
@@ -226,14 +353,8 @@ class AgentLoop:
                 clean_content = TOOL_CALL_PATTERN.sub("", content).strip()
                 if not clean_content and last_tool_result:
                     clean_content = last_tool_result
-                return {
-                    "content": clean_content or content or "Sorry, I could not generate a response.",
-                    "tools_used": tools_used,
-                    "steps": steps,
-                    "input_tokens": total_input,
-                    "output_tokens": total_output,
-                    "total_tokens": total_input + total_output,
-                }
+                yield done(clean_content or "Non sono riuscito a generare una risposta. Riprova.")
+                return
 
             tool_name, tool_args = parsed
 
@@ -243,10 +364,7 @@ class AgentLoop:
                 status = "error"
             else:
                 try:
-                    tool_result = await asyncio.wait_for(
-                        tool.execute(tool_args, context),
-                        timeout=TOOL_TIMEOUT,
-                    )
+                    tool_result = await asyncio.wait_for(tool.execute(tool_args, context), timeout=TOOL_TIMEOUT)
                     tools_used.append(tool_name)
                     status = "error" if isinstance(tool_result, dict) and "error" in tool_result else "ok"
                 except asyncio.TimeoutError:
@@ -257,29 +375,19 @@ class AgentLoop:
                     tool_result = {"error": f"Tool '{tool_name}' failed unexpectedly"}
                     status = "error"
 
-            result_str = json.dumps(tool_result)
             formatted = _format_tool_result(tool_name, tool_result)
             last_tool_result = formatted
-
-            steps.append({
+            step = {
                 "tool": tool_name,
                 "args": tool_args,
-                "result": result_str[:500],
+                "result": json.dumps(tool_result, ensure_ascii=False)[:500],
                 "status": status,
-            })
+            }
+            steps.append(step)
+            yield {"type": "step", "step": step}
 
             # Native layout: the assistant turn keeps its <tool_call>, the result comes back as <tool_response>.
             working_messages.append({"role": "assistant", "content": content.strip()})
-            working_messages.append({
-                "role": "user",
-                "content": f"<tool_response>\n{formatted}\n</tool_response>",
-            })
+            working_messages.append({"role": "user", "content": f"<tool_response>\n{formatted}\n</tool_response>"})
 
-        return {
-            "content": last_tool_result or "I was unable to complete the request.",
-            "tools_used": tools_used,
-            "steps": steps,
-            "input_tokens": total_input,
-            "output_tokens": total_output,
-            "total_tokens": total_input + total_output,
-        }
+        yield done(last_tool_result or "Non sono riuscito a completare la richiesta.")

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowUp, FileText, Paperclip, X } from "@phosphor-icons/react";
 import { useChatStore } from "@/lib/store";
+import { applyEvent, createSseParser, emptyDraft, errorMessage } from "@/lib/chat-stream";
 import type { Message } from "@/types/database";
 
 const MIME_BY_EXT: Record<string, string> = {
@@ -40,6 +41,8 @@ interface PendingFile {
   preview?: string;
 }
 
+class ChatError extends Error {}
+
 export function Composer() {
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
@@ -53,6 +56,7 @@ export function Composer() {
     setConversations,
     setCurrentConversation,
     addMessage,
+    updateMessage,
     setGenerating,
     isGenerating,
     pendingPrompt,
@@ -252,30 +256,70 @@ export function Composer() {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || "Request failed");
+        throw new ChatError(errorMessage(err.error));
       }
 
-      const result = await response.json();
-
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        conversation_id: convId,
-        user_id: user.id,
-        role: "assistant",
-        content: result.content || result.message || "No response",
-        token_count: result.token_count || 0,
-        metadata: result.metadata || null,
-        created_at: new Date().toISOString(),
+      const assistantId = crypto.randomUUID();
+      let draft = emptyDraft();
+      let shown = false;
+      const render = () => {
+        const failed = draft.error && !draft.done;
+        const patch = {
+          content: failed ? errorMessage(draft.error ?? undefined) : draft.content,
+          metadata: draft.steps.length > 0 ? ({ steps: draft.steps } as unknown as Message["metadata"]) : null,
+        };
+        if (!shown) {
+          // The typing indicator stays until there is something real to show.
+          if (!patch.content && !patch.metadata) return;
+          shown = true;
+          addMessage({
+            id: assistantId,
+            conversation_id: convId,
+            user_id: user.id,
+            role: "assistant",
+            token_count: 0,
+            created_at: new Date().toISOString(),
+            ...patch,
+          });
+        } else {
+          updateMessage(assistantId, patch);
+        }
       };
 
-      addMessage(assistantMsg);
+      const isStream = (response.headers.get("content-type") ?? "").includes("text/event-stream");
+      if (isStream && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const parser = createSseParser();
+        let frame = 0;
+        const schedule = () => {
+          // Coalesce token bursts into one render per frame.
+          if (!frame) frame = requestAnimationFrame(() => ((frame = 0), render()));
+        };
+        while (true) {
+          const { value, done } = await reader.read();
+          const events = done ? parser.end() : parser.feed(decoder.decode(value, { stream: true }));
+          for (const event of events) draft = applyEvent(draft, event);
+          if (events.length) schedule();
+          if (done) break;
+        }
+        cancelAnimationFrame(frame);
+        if (!draft.done && !draft.error) draft = { ...draft, error: "incomplete" };
+        render();
+      } else {
+        // Older edge function: one JSON answer.
+        const result = await response.json();
+        draft = { ...draft, content: result.content || "", steps: result.metadata?.steps ?? [], done: result };
+        render();
+      }
     } catch (err: any) {
       const errorMsg: Message = {
         id: crypto.randomUUID(),
         conversation_id: convId,
         user_id: user.id,
         role: "assistant",
-        content: `Errore: ${err.message || "Qualcosa e andato storto"}`,
+        // Only messages we wrote ourselves are shown; browser errors like "Failed to fetch" are not.
+        content: err instanceof ChatError ? err.message : errorMessage("network"),
         token_count: 0,
         metadata: null,
         created_at: new Date().toISOString(),

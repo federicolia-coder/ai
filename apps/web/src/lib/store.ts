@@ -13,6 +13,7 @@ interface ChatState {
   setCurrentConversation: (id: string | null) => void;
   setMessages: (m: Message[]) => void;
   addMessage: (m: Message) => void;
+  updateMessage: (id: string, patch: Partial<Message>) => void;
   updateLastAssistantMessage: (content: string) => void;
   setGenerating: (v: boolean) => void;
   toggleSidebar: () => void;
@@ -32,6 +33,8 @@ export const useChatStore = create<ChatState>((set) => ({
   setCurrentConversation: (id) => set({ currentConversationId: id }),
   setMessages: (messages) => set({ messages }),
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
+  updateMessage: (id, patch) =>
+    set((s) => ({ messages: s.messages.map((m) => (m.id === id ? { ...m, ...patch } : m)) })),
   updateLastAssistantMessage: (content) =>
     set((s) => {
       const msgs = [...s.messages];

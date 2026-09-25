@@ -53,12 +53,25 @@ export interface HistoryRow {
  * rows: most recent first. Returns chronological history without the message being answered now,
  * which the client stores before calling this function.
  */
-export function buildHistory(rowsNewestFirst: HistoryRow[], currentMessage: string, limit: number): HistoryRow[] {
+export function buildHistory(
+  rowsNewestFirst: HistoryRow[],
+  currentMessage: string,
+  limit: number,
+  maxChars = Infinity,
+): HistoryRow[] {
   const rows = rowsNewestFirst.filter((m) => m.role === "user" || m.role === "assistant");
   if (rows.length > 0 && rows[0].role === "user" && rows[0].content === currentMessage) {
     rows.shift();
   }
-  return rows.slice(0, limit).reverse().map((m) => ({ role: m.role, content: m.content }));
+  // Every history character is prompt the CPU model must process before answering: keep the newest that fit.
+  const kept: HistoryRow[] = [];
+  let used = 0;
+  for (const m of rows.slice(0, limit)) {
+    if (used + m.content.length > maxChars) break;
+    kept.push({ role: m.role, content: m.content });
+    used += m.content.length;
+  }
+  return kept.reverse();
 }
 
 export interface AttachmentRow {
@@ -94,4 +107,50 @@ export function selectAttachments(rowsNewestFirst: AttachmentRow[], userId: stri
     }
   }
   return { download, metadataOnly, skipped };
+}
+
+export interface RelayOutcome {
+  result: any | null;
+  failed: boolean;
+}
+
+/**
+ * Forwards every chunk of a server-sent-events stream untouched while watching for the final
+ * `done` event (the answer to save) or an `error` event. Events may be split across chunks.
+ */
+export async function relaySse(
+  stream: ReadableStream<Uint8Array>,
+  send: (chunk: Uint8Array) => Promise<void>,
+): Promise<RelayOutcome> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const outcome: RelayOutcome = { result: null, failed: false };
+
+  const consume = (block: string) => {
+    for (const line of block.split("\n")) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        if (event.type === "done") outcome.result = event.result;
+        if (event.type === "error") outcome.failed = true;
+      } catch {
+        // Not JSON: skipped here and in the browser alike.
+      }
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    await send(value);
+    buffer += decoder.decode(value, { stream: true });
+    let sep: number;
+    while ((sep = buffer.indexOf("\n\n")) !== -1) {
+      consume(buffer.slice(0, sep));
+      buffer = buffer.slice(sep + 2);
+    }
+  }
+  if (buffer.trim()) consume(buffer);
+  return outcome;
 }

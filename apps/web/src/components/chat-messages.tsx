@@ -280,20 +280,53 @@ function EmptyState() {
   );
 }
 
+function TypingDots() {
+  return (
+    <div className="flex h-7 items-center gap-1.5" role="status" aria-label="Tarry sta scrivendo">
+      {[0, 0.2, 0.4].map((d) => (
+        <span
+          key={d}
+          className="inline-block h-1.5 w-1.5 rounded-full"
+          style={{
+            background: "var(--color-text-tertiary)",
+            animation: `pulse-soft 1.4s ease-in-out infinite ${d}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const STICK_THRESHOLD_PX = 120;
+
 export function ChatMessages() {
   const { messages, isGenerating } = useChatStore();
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
 
+  function onScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD_PX;
+  }
+
+  const lastRole = messages[messages.length - 1]?.role;
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    bottomRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
-  }, [messages, isGenerating]);
+    const el = scrollRef.current;
+    // Sending a message always jumps to it; while an answer streams, follow it only if the
+    // reader is already at the bottom, so scrolling up to read is never interrupted.
+    if (lastRole === "user") stickToBottom.current = true;
+    if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
+  }, [messages, isGenerating, lastRole]);
+
+  const last = messages[messages.length - 1];
+  const waitingForFirstEvent = isGenerating && last?.role !== "assistant";
 
   if (messages.length === 0) return <EmptyState />;
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-8">
-      <ol className="mx-auto max-w-2xl space-y-8" aria-label="Messaggi">
+    <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-4 py-8">
+      <ol className="mx-auto max-w-2xl space-y-8" aria-label="Messaggi" aria-busy={isGenerating}>
         {messages
           .filter((m) => m.role !== "system")
           .map((m) => {
@@ -325,34 +358,28 @@ export function ChatMessages() {
                       ))}
                     </div>
                   )}
-                  <div className="prose-tarry text-sm leading-relaxed">
-                    <MessageMarkdown content={m.content} />
-                  </div>
-                  <CopyButton text={m.content} />
+                  {m.content ? (
+                    <div className="prose-tarry text-sm leading-relaxed">
+                      <MessageMarkdown content={m.content} />
+                    </div>
+                  ) : null}
+                  {isGenerating && m.id === last?.id ? (
+                    !m.content && <TypingDots />
+                  ) : (
+                    <CopyButton text={m.content} />
+                  )}
                 </div>
               </li>
             );
           })}
 
-        {isGenerating && (
-          <li className="flex gap-3" aria-live="polite">
+        {waitingForFirstEvent && (
+          <li className="flex gap-3">
             <TarryMark size={28} className="shrink-0" />
-            <div className="flex h-7 items-center gap-1.5" aria-label="Tarry sta scrivendo">
-              {[0, 0.2, 0.4].map((d) => (
-                <span
-                  key={d}
-                  className="inline-block h-1.5 w-1.5 rounded-full"
-                  style={{
-                    background: "var(--color-text-tertiary)",
-                    animation: `pulse-soft 1.4s ease-in-out infinite ${d}s`,
-                  }}
-                />
-              ))}
-            </div>
+            <TypingDots />
           </li>
         )}
       </ol>
-      <div ref={bottomRef} />
     </div>
   );
 }

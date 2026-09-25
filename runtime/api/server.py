@@ -1,11 +1,13 @@
 import asyncio
+import json
 import logging
+import threading
 import time
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -13,6 +15,7 @@ from runtime.config.settings import (
     RUNTIME_SECRET,
     MAX_CONCURRENT_REQUESTS,
     MAX_GENERATION_LENGTH,
+    REQUEST_TIMEOUT,
 )
 from runtime.model.local_provider import LocalModelProvider
 from runtime.model.provider import ModelProvider
@@ -147,7 +150,7 @@ async def chat(request: Request, body: ChatRequest):
     context = ToolContext(credentials=body.credentials, files=list(files))
 
     try:
-        async with asyncio.timeout(120):
+        async with asyncio.timeout(REQUEST_TIMEOUT):
             async with semaphore:
                 result = await agent.run(
                     messages=body.messages,
@@ -162,3 +165,73 @@ async def chat(request: Request, body: ChatRequest):
         raise HTTPException(status_code=500, detail="Internal error")
 
     return result
+
+
+HEARTBEAT_SECONDS = 10
+
+
+def _sse(event: dict) -> str:
+    return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+
+@app.post("/v1/chat/stream")
+async def chat_stream(request: Request, body: ChatRequest):
+    """Server-sent events: token / discard / step while working, then one done (or error) event."""
+    verify_auth(request)
+
+    if not model.is_loaded():
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    if not agent or not semaphore:
+        raise HTTPException(status_code=503, detail="Runtime not initialized")
+
+    files = await asyncio.gather(
+        *(asyncio.to_thread(extract_file, f.name, f.mime, f.data) for f in body.files)
+    )
+    context = ToolContext(credentials=body.credentials, files=list(files))
+    cancel = threading.Event()
+
+    async def produce(queue: asyncio.Queue) -> None:
+        try:
+            async with asyncio.timeout(REQUEST_TIMEOUT):
+                async with semaphore:
+                    async for event in agent.run_events(
+                        messages=body.messages,
+                        enabled_tools=body.tools,
+                        max_tokens=body.max_tokens,
+                        context=context,
+                        cancel=cancel,
+                    ):
+                        await queue.put(event)
+        except asyncio.TimeoutError:
+            await queue.put({"type": "error", "error": "timeout"})
+        except Exception as e:
+            logger.error("Chat stream error for user %s: %s", body.user_id, e)
+            await queue.put({"type": "error", "error": "internal"})
+        finally:
+            await queue.put(None)
+
+    async def events():
+        queue: asyncio.Queue = asyncio.Queue()
+        task = asyncio.create_task(produce(queue))
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=HEARTBEAT_SECONDS)
+                except asyncio.TimeoutError:
+                    # Prompt processing on CPU can take a while before the first token; keep proxies from closing.
+                    yield ": ping\n\n"
+                    continue
+                if event is None:
+                    break
+                yield _sse(event)
+        finally:
+            # Client gone or stream finished: stop generating tokens nobody will read.
+            cancel.set()
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

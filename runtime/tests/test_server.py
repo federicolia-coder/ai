@@ -73,3 +73,57 @@ def test_too_many_files(client):
     files = [{"name": f"{i}.txt", "mime": "text/plain", "data": ""} for i in range(6)]
     r = client.post("/v1/chat", json={"messages": [], "files": files}, headers=AUTH)
     assert r.status_code == 422
+
+
+def _parse_sse(text):
+    import json as _json
+    events = []
+    for block in text.split("\n\n"):
+        for line in block.splitlines():
+            if line.startswith("data: "):
+                events.append(_json.loads(line[6:]))
+    return events
+
+
+@pytest.fixture
+def stream_client(monkeypatch):
+    monkeypatch.setattr(server, "RUNTIME_SECRET", "test-secret")
+
+    class FakeStreamingAgent:
+        async def run_events(self, messages, enabled_tools, max_tokens, context, cancel):
+            yield {"type": "step", "step": {"tool": "calculate", "args": {}, "result": "{}", "status": "ok"}}
+            yield {"type": "token", "text": "Fa "}
+            yield {"type": "token", "text": "42."}
+            yield {"type": "done", "result": {"content": "Fa 42.", "tools_used": ["calculate"], "steps": [], "input_tokens": 1, "output_tokens": 2, "total_tokens": 3}}
+
+    monkeypatch.setattr(server, "agent", FakeStreamingAgent())
+    monkeypatch.setattr(server, "semaphore", __import__("asyncio").Semaphore(1))
+    monkeypatch.setattr(server.model, "is_loaded", lambda: True)
+    return TestClient(server.app)
+
+
+def test_stream_emits_sse_events_in_order(stream_client):
+    r = stream_client.post("/v1/chat/stream", json={"messages": [{"role": "user", "content": "6*7"}]}, headers=AUTH)
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/event-stream")
+    events = _parse_sse(r.text)
+    assert [e["type"] for e in events] == ["step", "token", "token", "done"]
+    assert events[-1]["result"]["content"] == "Fa 42."
+
+
+def test_stream_requires_auth(stream_client):
+    r = stream_client.post("/v1/chat/stream", json={"messages": []}, headers={"Authorization": "Bearer nope"})
+    assert r.status_code == 401
+
+
+def test_stream_reports_agent_failure_as_error_event(stream_client, monkeypatch):
+    class Broken:
+        async def run_events(self, **kwargs):
+            raise RuntimeError("boom")
+            yield  # pragma: no cover
+
+    monkeypatch.setattr(server, "agent", Broken())
+    r = stream_client.post("/v1/chat/stream", json={"messages": []}, headers=AUTH)
+    events = _parse_sse(r.text)
+    assert events == [{"type": "error", "error": "internal"}]
+    assert "boom" not in r.text

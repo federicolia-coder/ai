@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
-import { buildHistory, MAX_FILES, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
+import { buildHistory, MAX_FILES, relaySse, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
 
 const RUNTIME_URL = Deno.env.get("TARRY_RUNTIME_URL") || "";
 const RUNTIME_SECRET = Deno.env.get("TARRY_RUNTIME_SECRET") || "";
 
 const HISTORY_LIMIT = 10;
+const HISTORY_MAX_CHARS = 6000;
 
 function toBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -20,6 +21,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const SYSTEM_PROMPT = [
+  "Sei Tarry, assistente AI di TestardStudios. Il tuo nome è Tarry.",
+  "",
+  "Rispondi SEMPRE nella lingua dell'utente. In italiano usa accenti corretti (è, é, à, ò, ù).",
+  "",
+  "Rispondi in modo utile e completo, ma vai dritto al punto: niente introduzioni, niente ripetizioni della domanda, niente riassunti finali. Aggiungi esempi o dettagli solo quando servono davvero.",
+  "",
+  "Per domande personali su di te: Mi chiamo Tarry, sono un assistente AI creato da TestardStudios. Sono qui per aiutarti con domande, calcoli, codice e ricerche.",
+  "",
+  "Per qualsiasi calcolo usa subito lo strumento calculate, senza annunciarlo e senza scrivere formule. Poi dai il risultato in testo semplice con i numeri all'italiana (per esempio 409,50 €). Non usare mai LaTeX.",
+  "",
+  "Per codice: usa blocchi markdown con il linguaggio (```python, ```js). Se non sai qualcosa, dillo.",
+  "",
+  "IMPORTANTE: Quando l'utente chiede notizie, eventi recenti, aggiornamenti, meteo, risultati sportivi o qualsiasi informazione che cambia nel tempo, USA SEMPRE lo strumento 'search' per cercare sul web informazioni aggiornate. Non inventare notizie e non dire che non puoi accedere a internet. Cerca e riporta i risultati.",
+].join("\n");
+
+const SSE_HEADERS = { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" };
+
+function sseEvent(event: unknown): string {
+  return `data: ${JSON.stringify(event)}\n\n`;
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -174,7 +197,7 @@ Deno.serve(async (req: Request) => {
         .limit(20),
     ]);
 
-    const history = buildHistory(historyRes.data ?? [], message, HISTORY_LIMIT);
+    const history = buildHistory(historyRes.data ?? [], message, HISTORY_LIMIT, HISTORY_MAX_CHARS);
     const pluginTools = resolvePluginTools(pluginsRes.data ?? [], userPluginsRes.data ?? []);
     const connectors = resolveConnectors(
       (connectorsRes.data ?? []).map((row: any) => ({
@@ -201,96 +224,30 @@ Deno.serve(async (req: Request) => {
       files.push({ name: row.file_name, mime: row.file_type, data: "" });
     }
 
-    // Call Tarry Runtime
-    const runtimeResponse = await fetch(`${RUNTIME_URL}/v1/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RUNTIME_SECRET}`,
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content: [
-              "Sei Tarry, assistente AI di TestardStudios. Il tuo nome è Tarry.",
-              "",
-              "Rispondi SEMPRE nella lingua dell'utente. In italiano usa accenti corretti (è, é, à, ò, ù).",
-              "",
-              "Rispondi in modo completo e utile. Non dare risposte di una sola frase quando la domanda merita una spiegazione. Aggiungi contesto, esempi o dettagli quando appropriato.",
-              "",
-              "Per domande personali su di te: Mi chiamo Tarry, sono un assistente AI creato da TestardStudios. Sono qui per aiutarti con domande, calcoli, codice e ricerche.",
-              "",
-              "Per qualsiasi calcolo usa subito lo strumento calculate, senza annunciarlo e senza scrivere formule. Poi dai il risultato in testo semplice con i numeri all'italiana (per esempio 409,50 €). Non usare mai LaTeX.",
-              "",
-              "Per codice: usa blocchi markdown con il linguaggio (```python, ```js). Se non sai qualcosa, dillo.",
-              "",
-              "IMPORTANTE: Quando l'utente chiede notizie, eventi recenti, aggiornamenti, meteo, risultati sportivi o qualsiasi informazione che cambia nel tempo, USA SEMPRE lo strumento 'search' per cercare sul web informazioni aggiornate. Non inventare notizie e non dire che non puoi accedere a internet. Cerca e riporta i risultati.",
-            ].join("\n"),
-          },
-          ...history,
-          { role: "user", content: message },
-        ],
-        tools: enabledTools,
-        max_tokens: 1024,
-        user_id: user.id,
-        credentials: connectors.credentials,
-        files,
-      }),
-    });
-
-    if (!runtimeResponse.ok) {
-      const errorText = (await runtimeResponse.text()).slice(0, 500);
-      console.error("Runtime error:", runtimeResponse.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "AI runtime unavailable" }),
-        {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const result = await runtimeResponse.json();
-
-    // Save assistant message
-    await supabase.from("messages").insert({
-      conversation_id,
+    const runtimeHeaders = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${RUNTIME_SECRET}`,
+    };
+    const runtimeBody = JSON.stringify({
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...history,
+        { role: "user", content: message },
+      ],
+      tools: enabledTools,
+      max_tokens: 1024,
       user_id: user.id,
-      role: "assistant",
-      content: result.content,
-      token_count: result.total_tokens || 0,
-      metadata: {
-        tools_used: result.tools_used || [],
-        steps: result.steps || [],
-        input_tokens: result.input_tokens || 0,
-        output_tokens: result.output_tokens || 0,
-      },
+      credentials: connectors.credentials,
+      files,
     });
 
-    // Update token usage atomically
-    const totalTokens = (result.input_tokens || 0) + (result.output_tokens || 0);
-    await adminClient.rpc("increment_token_usage", {
-      p_user_id: user.id,
-      p_tokens: totalTokens,
-    });
-
-    // Update conversation title if it's still default
-    const { data: conv } = await supabase
-      .from("conversations")
-      .select("title")
-      .eq("id", conversation_id)
-      .single();
-
-    if (conv && conv.title === "New conversation") {
-      await supabase
-        .from("conversations")
-        .update({ title: message.slice(0, 60) })
-        .eq("id", conversation_id);
-    }
-
-    return new Response(
-      JSON.stringify({
+    const userId = user.id;
+    async function saveResult(result: any) {
+      const totalTokens = (result.input_tokens || 0) + (result.output_tokens || 0);
+      await supabase.from("messages").insert({
+        conversation_id,
+        user_id: userId,
+        role: "assistant",
         content: result.content,
         token_count: totalTokens,
         metadata: {
@@ -299,11 +256,82 @@ Deno.serve(async (req: Request) => {
           input_tokens: result.input_tokens || 0,
           output_tokens: result.output_tokens || 0,
         },
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+      await adminClient.rpc("increment_token_usage", { p_user_id: userId, p_tokens: totalTokens });
+      const { data: conv } = await supabase.from("conversations").select("title").eq("id", conversation_id).single();
+      if (conv && conv.title === "New conversation") {
+        await supabase.from("conversations").update({ title: message.slice(0, 60) }).eq("id", conversation_id);
       }
-    );
+    }
+
+    const runtimeUnavailable = () =>
+      new Response(JSON.stringify({ error: "AI runtime unavailable" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    const runtimeResponse = await fetch(`${RUNTIME_URL}/v1/chat/stream`, {
+      method: "POST",
+      headers: runtimeHeaders,
+      body: runtimeBody,
+    });
+
+    if (runtimeResponse.status === 404) {
+      // Runtime not updated yet: use the non-streaming endpoint and send the answer as a single event.
+      await runtimeResponse.body?.cancel();
+      const legacy = await fetch(`${RUNTIME_URL}/v1/chat`, { method: "POST", headers: runtimeHeaders, body: runtimeBody });
+      if (!legacy.ok) {
+        console.error("Runtime error:", legacy.status, (await legacy.text()).slice(0, 500));
+        return runtimeUnavailable();
+      }
+      const result = await legacy.json();
+      await saveResult(result);
+      return new Response(sseEvent({ type: "done", result }), { headers: SSE_HEADERS });
+    }
+
+    if (!runtimeResponse.ok || !runtimeResponse.body) {
+      console.error("Runtime error:", runtimeResponse.status, (await runtimeResponse.text()).slice(0, 500));
+      return runtimeUnavailable();
+    }
+
+    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+    let clientGone = false;
+    const send = async (chunk: Uint8Array) => {
+      if (clientGone) return;
+      try {
+        await writer.write(chunk);
+      } catch {
+        // The browser left; keep reading so the answer is still saved.
+        clientGone = true;
+      }
+    };
+
+    const runtimeStream = runtimeResponse.body;
+    const relay = (async () => {
+      try {
+        const outcome = await relaySse(runtimeStream, send);
+        if (outcome.result) {
+          await saveResult(outcome.result);
+        } else if (!outcome.failed) {
+          await send(encoder.encode(sseEvent({ type: "error", error: "incomplete" })));
+        }
+      } catch (err) {
+        console.error("Stream relay error:", err instanceof Error ? err.message : "unknown");
+        await send(encoder.encode(sseEvent({ type: "error", error: "relay" })));
+      } finally {
+        try {
+          await writer.close();
+        } catch {
+          // Already closed by the client.
+        }
+      }
+    })();
+    // Keeps the function alive until the answer is saved, even after the response is handed back.
+    (globalThis as any).EdgeRuntime?.waitUntil?.(relay);
+
+    return new Response(readable, { headers: SSE_HEADERS });
   } catch (err) {
     console.error("Chat function error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {

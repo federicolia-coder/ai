@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { buildHistory, MAX_TOTAL_BYTES, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
+import { buildHistory, MAX_TOTAL_BYTES, relaySse, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
 
 const plugins = [
   { id: "calc", tools: ["calculate"], enabled_by_default: true },
@@ -79,4 +79,64 @@ Deno.test("attachments: images metadata only, size budget, max count, foreign pa
   assertEquals(r.metadataOnly.map((x) => x.file_name), ["a.png"]);
   assertEquals(r.download.map((x) => x.file_name), ["big.pdf", "c.txt", "d.txt", "e.txt"]);
   assertEquals(r.skipped.map((x) => x.file_name), ["b.pdf"]);
+});
+
+Deno.test("history stops at the character budget, keeping the newest messages", () => {
+  const newestFirst = [
+    { role: "assistant", content: "b".repeat(40) },
+    { role: "user", content: "a".repeat(40) },
+    { role: "assistant", content: "old".repeat(100) },
+  ];
+  assertEquals(buildHistory(newestFirst, "nuova", 10, 100), [
+    { role: "user", content: "a".repeat(40) },
+    { role: "assistant", content: "b".repeat(40) },
+  ]);
+});
+
+function streamOf(chunks: string[]): ReadableStream<Uint8Array> {
+  const enc = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      for (const c of chunks) controller.enqueue(enc.encode(c));
+      controller.close();
+    },
+  });
+}
+
+Deno.test("relaySse forwards bytes untouched and finds the done event across chunk boundaries", async () => {
+  const done = { type: "done", result: { content: "Fa 409,50 €.", input_tokens: 5 } };
+  const full = `: ping\n\ndata: {"type":"token","text":"Fa"}\n\ndata: ${JSON.stringify(done)}\n\n`;
+  // Split in awkward places: inside the JSON and inside a multi-byte character.
+  const bytes = new TextEncoder().encode(full);
+  const cut1 = 20, cut2 = bytes.length - 12;
+  const parts = [bytes.slice(0, cut1), bytes.slice(cut1, cut2), bytes.slice(cut2)];
+  const stream = new ReadableStream<Uint8Array>({
+    start(c) {
+      parts.forEach((p) => c.enqueue(p));
+      c.close();
+    },
+  });
+  const forwarded: Uint8Array[] = [];
+  const outcome = await relaySse(stream, async (chunk) => {
+    forwarded.push(chunk);
+  });
+  assertEquals(outcome, { result: done.result, failed: false });
+  const joined = new Uint8Array(forwarded.reduce((n, c) => n + c.length, 0));
+  let off = 0;
+  for (const c of forwarded) {
+    joined.set(c, off);
+    off += c.length;
+  }
+  assertEquals(new TextDecoder().decode(joined), full);
+});
+
+Deno.test("relaySse reports runtime errors and missing done", async () => {
+  const noop = async () => {};
+  assertEquals(await relaySse(streamOf(['data: {"type":"error","error":"timeout"}\n\n']), noop), { result: null, failed: true });
+  assertEquals(await relaySse(streamOf(['data: {"type":"token","text":"x"}\n\n']), noop), { result: null, failed: false });
+});
+
+Deno.test("relaySse accepts a final event without trailing blank line", async () => {
+  const outcome = await relaySse(streamOf(['data: {"type":"done","result":{"content":"ok"}}']), async () => {});
+  assertEquals(outcome.result, { content: "ok" });
 });
