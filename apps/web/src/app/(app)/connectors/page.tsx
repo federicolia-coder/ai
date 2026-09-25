@@ -11,24 +11,22 @@ interface ConnectorWithState extends Connector {
 }
 
 const CONNECTOR_ICONS: Record<string, React.ReactNode> = {
-  google_drive: (
+  cloud: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 3l6 0 4 7H11L7 3z" />
-      <path d="M3 17l3-7h11l-3 7H3z" />
-      <path d="M7 3L3 10l3 7" />
+      <path d="M5 16a4 4 0 01-.5-7.97A6 6 0 0115.5 8 4.5 4.5 0 0116 16H5z" />
     </svg>
   ),
-  notion: (
+  book: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="2" width="14" height="16" rx="2" />
       <path d="M7 6h6M7 10h6M7 14h3" />
     </svg>
   ),
-  github: (
+  code: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="10" cy="10" r="7" />
-      <path d="M7 16v-2a2 2 0 012-2h2a2 2 0 012 2v2" />
-      <circle cx="10" cy="8" r="2" />
+      <path d="M7 5L3 10l4 5" />
+      <path d="M13 5l4 5-4 5" />
+      <path d="M11 3l-2 14" />
     </svg>
   ),
   webhook: (

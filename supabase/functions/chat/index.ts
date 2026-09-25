@@ -199,6 +199,8 @@ Deno.serve(async (req: Request) => {
               "Per domande personali su di te: Mi chiamo Tarry, sono un assistente AI creato da TestardStudios. Sono qui per aiutarti con domande, calcoli, codice e ricerche.",
               "",
               "Per matematica: mostra i passaggi. Per codice: usa blocchi markdown con il linguaggio (```python, ```js). Se non sai qualcosa, dillo.",
+              "",
+              "IMPORTANTE: Quando l'utente chiede notizie, eventi recenti, aggiornamenti, meteo, risultati sportivi o qualsiasi informazione che cambia nel tempo, USA SEMPRE lo strumento 'search' per cercare sul web informazioni aggiornate. Non inventare notizie e non dire che non puoi accedere a internet. Cerca e riporta i risultati.",
             ].join("\n"),
           },
           ...(history || []).map((m: any) => ({
@@ -208,7 +210,7 @@ Deno.serve(async (req: Request) => {
           { role: "user", content: message },
         ],
         tools: enabledTools,
-        max_tokens: 1024,
+        max_tokens: 2048,
         user_id: user.id,
       }),
     });

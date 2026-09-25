@@ -168,7 +168,7 @@ export function Sidebar() {
         className="flex items-center justify-between px-4 py-3 border-b"
         style={{ borderColor: "var(--color-border-light)" }}
       >
-        <div className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
           <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
             <circle cx="16" cy="16" r="14" fill="var(--color-accent)" />
             <circle cx="11" cy="14" r="2.5" fill="white" />
@@ -178,7 +178,7 @@ export function Sidebar() {
             <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" strokeWidth="2" strokeLinecap="round" />
           </svg>
           <span className="text-sm font-semibold tracking-tight">Tarry</span>
-        </div>
+        </a>
         <button
           onClick={createConversation}
           className="inline-flex items-center justify-center rounded-lg px-2 py-1 text-xs font-medium transition-colors"
