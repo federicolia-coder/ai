@@ -5,6 +5,7 @@ import re
 from typing import Any
 
 from runtime.model.provider import ModelProvider
+from runtime.tools.base import ToolContext
 from runtime.tools.registry import ToolRegistry
 from runtime.config.settings import MAX_TOOL_CALLS, TOOL_TIMEOUT
 
@@ -18,10 +19,47 @@ TOOL_CALL_PATTERN = re.compile(
 TOOL_SYSTEM_PROMPT = """You have access to tools. To use one, write EXACTLY this format:
 <tool_call>{"name": "tool_name", "arguments": {"param": "value"}}</tool_call>
 
-After receiving the result, present the information clearly to the user. Use the result data directly — do not invent or guess values.
+Call at most one tool per message. After receiving the result, present the information clearly to the user. Use the result data directly — do not invent or guess values. If a tool returns an error, tell the user what went wrong.
 
-Available tools:
+Available tools (parameters marked ? are optional):
 """
+
+INLINE_FILES_MAX_CHARS = 2000
+FORMATTED_RESULT_MAX_CHARS = 2500
+
+
+def _signature(name: str, schema: dict[str, Any]) -> str:
+    props = schema.get("properties", {}) or {}
+    required = set(schema.get("required", []) or [])
+    args = []
+    for pname, pdef in props.items():
+        ptype = pdef.get("type", "string")
+        if "enum" in pdef:
+            ptype = "|".join(str(v) for v in pdef["enum"])
+        args.append(f"{pname}{'' if pname in required else '?'}: {ptype}")
+    return f"{name}({', '.join(args)})"
+
+
+def _files_prompt(context: ToolContext, file_tools_enabled: bool) -> str:
+    if not context.files:
+        return ""
+    readable = [f for f in context.files if not f.error]
+    total = sum(len(f.text) for f in readable)
+    lines = ["The user attached these files to the conversation:"]
+    for f in context.files:
+        if f.error:
+            lines.append(f"- {f.name}: cannot be read ({f.error})")
+        else:
+            lines.append(f"- {f.name} ({len(f.text)} characters)")
+    if not file_tools_enabled:
+        lines.append("The Files plugin is disabled, so you cannot read them. Tell the user to enable the 'files' plugin in the Plugin page.")
+    elif readable and total <= INLINE_FILES_MAX_CHARS:
+        lines.append("Their full content is below, so you do not need read_file:")
+        for f in readable:
+            lines.append(f"<file name=\"{f.name}\">\n{f.text}\n</file>")
+    else:
+        lines.append("Use read_file or search_files to read them before answering questions about them.")
+    return "\n".join(lines)
 
 
 def _parse_tool_call(text: str) -> tuple[str, dict] | None:
@@ -63,7 +101,10 @@ def _format_tool_result(tool_name: str, result: dict) -> str:
         return "\n".join(lines)
     if tool_name == "calculate":
         return f"Result: {result.get('result', 'unknown')}"
-    return json.dumps(result)[:400]
+    text = json.dumps(result, ensure_ascii=False)
+    if len(text) > FORMATTED_RESULT_MAX_CHARS:
+        text = text[:FORMATTED_RESULT_MAX_CHARS] + "…(truncated)"
+    return text
 
 
 class AgentLoop:
@@ -74,27 +115,37 @@ class AgentLoop:
     async def run(
         self,
         messages: list[dict[str, str]],
-        enabled_tools: list[str] | None = None,
+        enabled_tools: list[str],
         max_tokens: int = 1024,
+        context: ToolContext | None = None,
     ) -> dict[str, Any]:
+        context = context or ToolContext()
         tool_defs = self.tools.list_definitions(enabled_tools)
+        enabled_names = {td["name"] for td in tool_defs}
         tools_used: list[str] = []
         steps: list[dict[str, Any]] = []
         total_input = 0
         total_output = 0
         last_tool_result: str | None = None
 
-        working_messages = list(messages)
+        working_messages = [dict(m) for m in messages]
 
+        extra_system = []
         if tool_defs:
             tool_desc = TOOL_SYSTEM_PROMPT
             for td in tool_defs:
-                tool_desc += f"\n- {td['name']}: {td['description']}"
+                tool_desc += f"\n- {_signature(td['name'], td['parameters'])}: {td['description']}"
+            extra_system.append(tool_desc)
+        files_prompt = _files_prompt(context, "read_file" in enabled_names)
+        if files_prompt:
+            extra_system.append(files_prompt)
 
+        if extra_system:
+            addition = "\n\n".join(extra_system)
             if working_messages and working_messages[0]["role"] == "system":
-                working_messages[0]["content"] += "\n\n" + tool_desc
+                working_messages[0]["content"] += "\n\n" + addition
             else:
-                working_messages.insert(0, {"role": "system", "content": tool_desc})
+                working_messages.insert(0, {"role": "system", "content": addition})
 
         for iteration in range(MAX_TOOL_CALLS + 1):
             result = self.model.generate(
@@ -125,23 +176,24 @@ class AgentLoop:
 
             tool_name, tool_args = parsed
 
-            tool = self.tools.get(tool_name)
+            tool = self.tools.get(tool_name) if tool_name in enabled_names else None
             if not tool:
-                tool_result = {"error": f"Unknown tool: {tool_name}"}
+                tool_result = {"error": f"Tool not available: {tool_name}"}
                 status = "error"
             else:
                 try:
                     tool_result = await asyncio.wait_for(
-                        tool.execute(tool_args),
+                        tool.execute(tool_args, context),
                         timeout=TOOL_TIMEOUT,
                     )
                     tools_used.append(tool_name)
-                    status = "ok"
+                    status = "error" if isinstance(tool_result, dict) and "error" in tool_result else "ok"
                 except asyncio.TimeoutError:
                     tool_result = {"error": f"Tool '{tool_name}' timed out"}
                     status = "error"
-                except Exception as e:
-                    tool_result = {"error": f"Tool '{tool_name}' failed: {str(e)}"}
+                except Exception:
+                    logger.exception("Tool %s failed", tool_name)
+                    tool_result = {"error": f"Tool '{tool_name}' failed unexpectedly"}
                     status = "error"
 
             result_str = json.dumps(tool_result)

@@ -5,27 +5,37 @@ import { createClient } from "@/lib/supabase/client";
 import { useChatStore } from "@/lib/store";
 import type { Message } from "@/types/database";
 
-const ALLOWED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/svg+xml",
-];
-const ALLOWED_DOC_TYPES = [
-  "application/pdf",
-  "text/plain",
-  "text/markdown",
-  "text/csv",
-  "application/json",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
-const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOC_TYPES];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MIME_BY_EXT: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  pdf: "application/pdf",
+  txt: "text/plain",
+  md: "text/markdown",
+  markdown: "text/markdown",
+  csv: "text/csv",
+  json: "application/json",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+const ALLOWED_TYPES = new Set(Object.values(MIME_BY_EXT));
+const ACCEPT = Object.keys(MIME_BY_EXT).map((e) => `.${e}`).join(",");
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILES_PER_MESSAGE = 5;
+
+// Browsers often report "" or a vendor type for .md/.csv, so the extension decides.
+function resolveMime(file: File): string | null {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const byExt = MIME_BY_EXT[ext];
+  if (byExt) return byExt;
+  return ALLOWED_TYPES.has(file.type) ? file.type : null;
+}
 
 interface PendingFile {
   file: File;
+  mime: string;
   preview?: string;
 }
 
@@ -42,6 +52,7 @@ export function Composer() {
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -66,29 +77,34 @@ export function Composer() {
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
-    setUploadError(null);
+    const errors: string[] = [];
+    const accepted: PendingFile[] = [];
+    let slots = MAX_FILES_PER_MESSAGE - pendingFiles.length;
 
-    const newFiles: PendingFile[] = [];
     for (const file of Array.from(files)) {
+      const mime = resolveMime(file);
       if (file.type.startsWith("video/")) {
-        setUploadError("I video non sono supportati.");
-        continue;
+        errors.push(`${file.name}: i video non sono supportati`);
+      } else if (!mime) {
+        errors.push(`${file.name}: formato non supportato`);
+      } else if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name}: supera i 10 MB`);
+      } else if (file.size === 0) {
+        errors.push(`${file.name}: il file è vuoto`);
+      } else if (slots <= 0) {
+        errors.push(`Massimo ${MAX_FILES_PER_MESSAGE} file per messaggio`);
+        break;
+      } else {
+        accepted.push({
+          file,
+          mime,
+          preview: mime.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+        });
+        slots--;
       }
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        setUploadError(`Tipo non supportato: ${file.name}`);
-        continue;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        setUploadError(`File troppo grande (max 10MB): ${file.name}`);
-        continue;
-      }
-      const pf: PendingFile = { file };
-      if (ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        pf.preview = URL.createObjectURL(file);
-      }
-      newFiles.push(pf);
     }
-    setPendingFiles((prev) => [...prev, ...newFiles]);
+    setUploadError(errors.length ? errors.join(" · ") : null);
+    setPendingFiles((prev) => [...prev, ...accepted]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -101,41 +117,53 @@ export function Composer() {
     });
   }
 
-  async function uploadFiles(convId: string, userId: string): Promise<string[]> {
+  async function uploadFiles(
+    convId: string,
+    userId: string,
+    files: PendingFile[]
+  ): Promise<{ paths: string[]; names: string[]; failed: string[] }> {
     const supabase = createClient();
     const paths: string[] = [];
+    const names: string[] = [];
+    const failed: string[] = [];
 
-    for (const pf of pendingFiles) {
-      const ext = pf.file.name.split(".").pop() || "bin";
+    for (const pf of files) {
+      const ext = pf.file.name.split(".").pop()?.toLowerCase() || "bin";
       const storagePath = `${userId}/${convId}/${crypto.randomUUID()}.${ext}`;
 
-      const { error } = await supabase.storage
+      const { error: uploadErr } = await supabase.storage
         .from("attachments")
-        .upload(storagePath, pf.file, { contentType: pf.file.type });
-
-      if (error) {
-        console.error("Upload error:", error);
+        .upload(storagePath, pf.file, { contentType: pf.mime });
+      if (uploadErr) {
+        failed.push(pf.file.name);
         continue;
       }
 
-      await supabase.from("attachments").insert({
+      const { error: rowErr } = await supabase.from("attachments").insert({
         user_id: userId,
         conversation_id: convId,
         file_name: pf.file.name,
-        file_type: pf.file.type,
+        file_type: pf.mime,
         file_size: pf.file.size,
         storage_path: storagePath,
       });
+      if (rowErr) {
+        await supabase.storage.from("attachments").remove([storagePath]);
+        failed.push(pf.file.name);
+        continue;
+      }
 
       paths.push(storagePath);
+      names.push(pf.file.name);
     }
-    return paths;
+    return { paths, names, failed };
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const content = input.trim();
-    if ((!content && pendingFiles.length === 0) || isGenerating || content.length > 16000) return;
+    if ((!content && pendingFiles.length === 0) || isGenerating || uploading || content.length > 16000) return;
+    setUploadError(null);
 
     const supabase = createClient();
     const {
@@ -161,27 +189,33 @@ export function Composer() {
       setConversations([data as any, ...conversations]);
     }
 
+    const toUpload = pendingFiles;
     let attachmentPaths: string[] = [];
-    if (pendingFiles.length > 0) {
-      attachmentPaths = await uploadFiles(convId, user.id);
-      pendingFiles.forEach((pf) => {
+    let fileNames: string[] = [];
+    if (toUpload.length > 0) {
+      setUploading(true);
+      const result = await uploadFiles(convId, user.id, toUpload);
+      setUploading(false);
+      attachmentPaths = result.paths;
+      fileNames = result.names;
+      toUpload.forEach((pf) => {
         if (pf.preview) URL.revokeObjectURL(pf.preview);
       });
       setPendingFiles([]);
+      if (result.failed.length > 0) {
+        setUploadError(`Caricamento non riuscito: ${result.failed.join(", ")}`);
+      }
+      if (!content && attachmentPaths.length === 0) return;
     }
-
-    const fileNames = attachmentPaths.length > 0
-      ? pendingFiles.map((pf) => pf.file.name)
-      : [];
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
       conversation_id: convId,
       user_id: user.id,
       role: "user",
-      content: content || (fileNames.length > 0 ? `[${fileNames.join(", ")}]` : ""),
+      content: content || `Ho allegato: ${fileNames.join(", ")}`,
       token_count: 0,
-      metadata: attachmentPaths.length > 0 ? { attachments: attachmentPaths } : null,
+      metadata: attachmentPaths.length > 0 ? { attachments: attachmentPaths, attachment_names: fileNames } : null,
       created_at: new Date().toISOString(),
     };
 
@@ -259,8 +293,6 @@ export function Composer() {
     }
   }
 
-  const acceptTypes = ALLOWED_TYPES.join(",");
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -296,6 +328,7 @@ export function Composer() {
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
+                  aria-label={`Rimuovi ${pf.file.name}`}
                   className="ml-1 rounded p-0.5 transition-colors"
                   style={{ color: "var(--color-text-tertiary)" }}
                 >
@@ -324,7 +357,7 @@ export function Composer() {
           <input
             ref={fileInputRef}
             type="file"
-            accept={acceptTypes}
+            accept={ACCEPT}
             multiple
             className="hidden"
             onChange={handleFileSelect}
@@ -332,10 +365,11 @@ export function Composer() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isGenerating}
+            disabled={isGenerating || uploading || pendingFiles.length >= MAX_FILES_PER_MESSAGE}
             className="shrink-0 inline-flex items-center justify-center rounded-lg p-1.5 transition-colors disabled:opacity-30"
             style={{ color: "var(--color-text-tertiary)" }}
-            title="Allega file o immagine"
+            title="Allega file o immagine (PDF, Word, Excel, testo, CSV, JSON, immagini, max 10 MB)"
+            aria-label="Allega file"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15.5 9.5l-6.4 6.4a4 4 0 01-5.6-5.6l6.4-6.4a2.7 2.7 0 013.8 3.8L7.3 14.1a1.3 1.3 0 01-1.9-1.9l5.7-5.7" />
@@ -355,11 +389,11 @@ export function Composer() {
           />
           <button
             type="submit"
-            disabled={isGenerating || (!input.trim() && pendingFiles.length === 0)}
+            disabled={isGenerating || uploading || (!input.trim() && pendingFiles.length === 0)}
             className="shrink-0 inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-all disabled:opacity-30"
             style={{ background: "var(--color-accent)" }}
           >
-            {isGenerating ? (
+            {isGenerating || uploading ? (
               <span
                 className="inline-block h-1 w-4 rounded-sm"
                 style={{ background: "white", animation: "pulse-soft 1s ease-in-out infinite" }}

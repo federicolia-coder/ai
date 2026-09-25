@@ -1,7 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
+import { buildHistory, MAX_FILES, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
 
 const RUNTIME_URL = Deno.env.get("TARRY_RUNTIME_URL") || "";
 const RUNTIME_SECRET = Deno.env.get("TARRY_RUNTIME_SECRET") || "";
+
+const HISTORY_LIMIT = 10;
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,45 +149,56 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Load conversation history
-    const { data: history } = await supabase
-      .from("messages")
-      .select("role, content")
-      .eq("conversation_id", conversation_id)
-      .order("created_at", { ascending: true })
-      .limit(10);
+    const [historyRes, pluginsRes, userPluginsRes, connectorsRes, attachmentsRes] = await Promise.all([
+      supabase
+        .from("messages")
+        .select("role, content")
+        .eq("conversation_id", conversation_id)
+        .order("created_at", { ascending: false })
+        .limit(HISTORY_LIMIT + 1),
+      adminClient.from("plugins").select("id, tools, enabled_by_default"),
+      adminClient.from("user_plugins").select("plugin_id, enabled").eq("user_id", user.id),
+      adminClient
+        .from("user_connectors")
+        .select("config, connectors!inner(slug, tools, available, enabled)")
+        .eq("user_id", user.id)
+        .eq("enabled", true)
+        .eq("connectors.available", true)
+        .eq("connectors.enabled", true),
+      adminClient
+        .from("attachments")
+        .select("file_name, file_type, file_size, storage_path")
+        .eq("conversation_id", conversation_id)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
 
-    // Load user's enabled plugins
-    const { data: userPlugins } = await supabase
-      .from("user_plugins")
-      .select("plugin_id, plugins(name, tools, permissions)")
-      .eq("user_id", user.id)
-      .eq("enabled", true);
+    const history = buildHistory(historyRes.data ?? [], message, HISTORY_LIMIT);
+    const pluginTools = resolvePluginTools(pluginsRes.data ?? [], userPluginsRes.data ?? []);
+    const connectors = resolveConnectors(
+      (connectorsRes.data ?? []).map((row: any) => ({
+        slug: row.connectors.slug,
+        tools: row.connectors.tools,
+        config: row.config,
+      })),
+    );
+    const enabledTools = [...new Set([...pluginTools, ...connectors.tools])];
 
-    const enabledTools: string[] = [];
-    if (userPlugins) {
-      for (const up of userPlugins) {
-        const plugin = (up as any).plugins;
-        if (plugin?.tools) {
-          enabledTools.push(...plugin.tools);
-        }
+    const selected = selectAttachments(attachmentsRes.data ?? [], user.id);
+    const files: { name: string; mime: string; data: string }[] = [];
+    for (const row of selected.download) {
+      const { data: blob, error } = await adminClient.storage.from("attachments").download(row.storage_path);
+      if (error || !blob) {
+        console.error("Attachment download failed:", row.storage_path, error?.message);
+        files.push({ name: row.file_name, mime: row.file_type, data: "" });
+        continue;
       }
+      files.push({ name: row.file_name, mime: row.file_type, data: toBase64(new Uint8Array(await blob.arrayBuffer())) });
     }
-
-    // Also add default-enabled plugins if user hasn't configured them
-    const { data: defaultPlugins } = await adminClient
-      .from("plugins")
-      .select("tools")
-      .eq("enabled_by_default", true);
-
-    if (defaultPlugins) {
-      for (const dp of defaultPlugins) {
-        for (const tool of dp.tools) {
-          if (!enabledTools.includes(tool)) {
-            enabledTools.push(tool);
-          }
-        }
-      }
+    for (const row of [...selected.metadataOnly, ...selected.skipped]) {
+      if (files.length >= MAX_FILES) break;
+      files.push({ name: row.file_name, mime: row.file_type, data: "" });
     }
 
     // Call Tarry Runtime
@@ -203,21 +226,20 @@ Deno.serve(async (req: Request) => {
               "IMPORTANTE: Quando l'utente chiede notizie, eventi recenti, aggiornamenti, meteo, risultati sportivi o qualsiasi informazione che cambia nel tempo, USA SEMPRE lo strumento 'search' per cercare sul web informazioni aggiornate. Non inventare notizie e non dire che non puoi accedere a internet. Cerca e riporta i risultati.",
             ].join("\n"),
           },
-          ...(history || []).map((m: any) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          ...history,
           { role: "user", content: message },
         ],
         tools: enabledTools,
         max_tokens: 1024,
         user_id: user.id,
+        credentials: connectors.credentials,
+        files,
       }),
     });
 
     if (!runtimeResponse.ok) {
-      const errorText = await runtimeResponse.text();
-      console.error("Runtime error:", errorText);
+      const errorText = (await runtimeResponse.text()).slice(0, 500);
+      console.error("Runtime error:", runtimeResponse.status, errorText);
       return new Response(
         JSON.stringify({ error: "AI runtime unavailable" }),
         {

@@ -1,34 +1,25 @@
-import ipaddress
 import os
-import socket
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
 
-from runtime.tools.base import Tool, ToolDefinition
+from runtime.plugins.netutil import is_private_host
+from runtime.tools.base import Tool, ToolContext, ToolDefinition
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("HTTP_ALLOWED_HOSTS", "").split(",") if h.strip()]
 MAX_RESPONSE_SIZE = 50_000
 
 
 def _is_private_ip(host: str) -> bool:
-    try:
-        for info in socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM):
-            addr = info[4][0]
-            ip = ipaddress.ip_address(addr)
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-                return True
-    except (socket.gaierror, ValueError):
-        return True
-    return False
+    return is_private_host(host)
 
 
 class HttpRequestTool(Tool):
     def definition(self) -> ToolDefinition:
         return ToolDefinition(
             name="request",
-            description="Make a controlled HTTP request to an external API.",
+            description="Make an HTTP GET or POST request to a public external API and return the response body.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -52,11 +43,14 @@ class HttpRequestTool(Tool):
             permissions=["http.request"],
         )
 
-    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, params: dict[str, Any], context: ToolContext | None = None) -> dict[str, Any]:
         url = params.get("url", "")
         method = params.get("method", "GET").upper()
-        headers = params.get("headers", {})
+        headers = params.get("headers") or {}
         body = params.get("body")
+        if not isinstance(headers, dict):
+            return {"error": "headers must be an object"}
+        headers = {str(k): str(v) for k, v in headers.items()}
 
         parsed = urlparse(url)
 
@@ -78,16 +72,23 @@ class HttpRequestTool(Tool):
             return {"error": "Only GET and POST methods are supported"}
 
         try:
-            async with httpx.AsyncClient(timeout=15, follow_redirects=True, max_redirects=3) as client:
+            # Redirects are not followed: each hop would need its own private-address check.
+            async with httpx.AsyncClient(timeout=15, follow_redirects=False) as client:
                 if method == "GET":
                     resp = await client.get(url, headers=headers)
                 else:
                     resp = await client.post(url, headers=headers, json=body)
 
+                if resp.is_redirect:
+                    return {
+                        "status": resp.status_code,
+                        "redirect_to": resp.headers.get("location", ""),
+                        "note": "Redirect not followed; request the new URL explicitly if needed.",
+                    }
                 content = resp.text[:MAX_RESPONSE_SIZE]
                 return {
                     "status": resp.status_code,
-                    "headers": dict(resp.headers),
+                    "content_type": resp.headers.get("content-type", ""),
                     "body": content,
                     "truncated": len(resp.text) > MAX_RESPONSE_SIZE,
                 }

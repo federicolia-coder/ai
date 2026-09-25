@@ -2,7 +2,7 @@ import ast
 import operator
 from typing import Any
 
-from runtime.tools.base import Tool, ToolDefinition
+from runtime.tools.base import Tool, ToolContext, ToolDefinition
 
 SAFE_OPS = {
     ast.Add: operator.add,
@@ -54,7 +54,7 @@ class CalculatorTool(Tool):
             },
         )
 
-    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, params: dict[str, Any], context: ToolContext | None = None) -> dict[str, Any]:
         expression = params.get("expression", "")
         try:
             tree = ast.parse(expression, mode="eval")

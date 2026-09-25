@@ -5,7 +5,7 @@ from urllib.parse import quote_plus
 
 import httpx
 
-from runtime.tools.base import Tool, ToolDefinition
+from runtime.tools.base import Tool, ToolContext, ToolDefinition
 
 WEB_SEARCH_API_KEY = os.getenv("WEB_SEARCH_API_KEY", "")
 WEB_SEARCH_PROVIDER = os.getenv("WEB_SEARCH_PROVIDER", "brave")
@@ -34,7 +34,7 @@ class WebSearchTool(Tool):
             permissions=["web.search"],
         )
 
-    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, params: dict[str, Any], context: ToolContext | None = None) -> dict[str, Any]:
         query = params.get("query", "")
         count = min(params.get("count", 3), 5)
 

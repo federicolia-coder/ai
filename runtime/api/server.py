@@ -4,6 +4,8 @@ import time
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -19,6 +21,11 @@ from runtime.plugins.calculator import CalculatorTool
 from runtime.plugins.web_search import WebSearchTool
 from runtime.plugins.http_request import HttpRequestTool
 from runtime.plugins.files import FileReadTool, FileSearchTool
+from runtime.plugins.extract import extract_file
+from runtime.plugins.connectors.github import GitHubFileTool, GitHubIssuesTool, GitHubReposTool
+from runtime.plugins.connectors.notion import NotionPageTool, NotionSearchTool
+from runtime.plugins.connectors.webhook import WebhookSendTool
+from runtime.tools.base import ToolContext
 from runtime.agent.loop import AgentLoop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -32,6 +39,13 @@ app.add_middleware(
     allow_methods=["POST", "GET"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    # Default handler echoes the rejected input, which may contain credentials.
+    errors = [{"loc": list(e.get("loc", [])), "msg": e.get("msg", "")} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})
+
 
 model: ModelProvider = LocalModelProvider()
 tools = ToolRegistry()
@@ -47,6 +61,12 @@ async def startup():
     tools.register(HttpRequestTool())
     tools.register(FileReadTool())
     tools.register(FileSearchTool())
+    tools.register(GitHubReposTool())
+    tools.register(GitHubIssuesTool())
+    tools.register(GitHubFileTool())
+    tools.register(NotionSearchTool())
+    tools.register(NotionPageTool())
+    tools.register(WebhookSendTool())
     try:
         model.load()
     except Exception as e:
@@ -61,11 +81,28 @@ def verify_auth(request: Request):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
+MAX_FILES = 5
+MAX_FILE_B64_CHARS = 8 * 1024 * 1024
+
+
+class FilePayload(BaseModel):
+    name: str = Field(max_length=255)
+    mime: str = Field(default="", max_length=200)
+    data: str = Field(default="", max_length=MAX_FILE_B64_CHARS)
+
+
 class ChatRequest(BaseModel):
     messages: list[dict[str, str]]
     tools: list[str] = Field(default_factory=list)
-    max_tokens: int = Field(default=1024, le=MAX_GENERATION_LENGTH)
+    max_tokens: int = Field(default=1024, ge=1, le=MAX_GENERATION_LENGTH)
     user_id: str = ""
+    credentials: dict[str, dict[str, str]] = Field(default_factory=dict)
+    files: list[FilePayload] = Field(default_factory=list, max_length=MAX_FILES)
+
+    def __repr__(self) -> str:
+        return f"ChatRequest(user_id={self.user_id!r}, tools={self.tools!r}, files={len(self.files)})"
+
+    __str__ = __repr__
 
 
 class HealthResponse(BaseModel):
@@ -103,13 +140,20 @@ async def chat(request: Request, body: ChatRequest):
     if not agent or not semaphore:
         raise HTTPException(status_code=503, detail="Runtime not initialized")
 
+    # Extraction is CPU-bound (PDF parsing), so keep it off the event loop.
+    files = await asyncio.gather(
+        *(asyncio.to_thread(extract_file, f.name, f.mime, f.data) for f in body.files)
+    )
+    context = ToolContext(credentials=body.credentials, files=list(files))
+
     try:
         async with asyncio.timeout(120):
             async with semaphore:
                 result = await agent.run(
                     messages=body.messages,
-                    enabled_tools=body.tools if body.tools else None,
+                    enabled_tools=body.tools,
                     max_tokens=body.max_tokens,
+                    context=context,
                 )
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Request timed out")

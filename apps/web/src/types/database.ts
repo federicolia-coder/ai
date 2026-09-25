@@ -250,23 +250,35 @@ export interface Attachment {
   created_at: string;
 }
 
+export interface ConnectorField {
+  name: string;
+  type: "password" | "url" | "text";
+  label: string;
+  required?: boolean;
+  help?: string;
+}
+
 export interface Connector {
   id: string;
+  slug: string;
   name: string;
   description: string;
   icon: string;
   auth_type: string;
-  config_schema: Record<string, unknown>;
+  config_schema: { fields?: ConnectorField[] };
+  tools: string[];
+  available: boolean;
   enabled: boolean;
   created_at: string;
 }
 
+// Credentials (config) are write-only from the browser and never selected here.
 export interface UserConnector {
   id: string;
   user_id: string;
   connector_id: string;
-  config: Record<string, unknown>;
   enabled: boolean;
+  configured: boolean;
   created_at: string;
   updated_at: string;
 }

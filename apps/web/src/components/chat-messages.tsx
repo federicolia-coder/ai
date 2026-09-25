@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { createClient } from "@/lib/supabase/client";
 import { useChatStore } from "@/lib/store";
 
 interface ToolStep {
@@ -207,38 +208,71 @@ function getSteps(metadata: unknown): ToolStep[] {
   return [];
 }
 
-function getAttachments(metadata: unknown): string[] {
-  if (!metadata || typeof metadata !== "object") return [];
-  const m = metadata as Record<string, unknown>;
-  if (Array.isArray(m.attachments)) return m.attachments as string[];
-  return [];
+interface AttachmentRef {
+  path: string;
+  name: string;
 }
 
-const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
+function getAttachments(metadata: unknown): AttachmentRef[] {
+  if (!metadata || typeof metadata !== "object") return [];
+  const m = metadata as Record<string, unknown>;
+  if (!Array.isArray(m.attachments)) return [];
+  const names = Array.isArray(m.attachment_names) ? (m.attachment_names as string[]) : [];
+  return (m.attachments as string[]).map((path, i) => ({
+    path,
+    name: names[i] || path.split("/").pop() || path,
+  }));
+}
+
+const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "webp"];
 
 function isImagePath(path: string): boolean {
   const ext = path.split(".").pop()?.toLowerCase() || "";
   return IMAGE_EXTS.includes(ext);
 }
 
-function getPublicUrl(path: string): string {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  return `${base}/storage/v1/object/public/attachments/${path}`;
-}
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
-function AttachmentDisplay({ paths }: { paths: string[] }) {
-  if (paths.length === 0) return null;
+function AttachmentDisplay({ items }: { items: AttachmentRef[] }) {
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [failed, setFailed] = useState(false);
+  const key = items.map((i) => i.path).join("|");
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.storage
+      .from("attachments")
+      .createSignedUrls(items.map((i) => i.path), SIGNED_URL_TTL_SECONDS)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) {
+          setFailed(true);
+          return;
+        }
+        const map: Record<string, string> = {};
+        for (const entry of data) {
+          if (entry.path && entry.signedUrl) map[entry.path] = entry.signedUrl;
+        }
+        setUrls(map);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="flex flex-wrap gap-2 mb-2">
-      {paths.map((path, i) => {
-        const fileName = path.split("/").pop() || path;
-        const url = getPublicUrl(path);
+      {items.map((item) => {
+        const url = urls[item.path];
 
-        if (isImagePath(path)) {
+        if (isImagePath(item.path) && url) {
           return (
             <a
-              key={i}
+              key={item.path}
               href={url}
               target="_blank"
               rel="noopener noreferrer"
@@ -247,32 +281,43 @@ function AttachmentDisplay({ paths }: { paths: string[] }) {
             >
               <img
                 src={url}
-                alt={fileName}
+                alt={item.name}
                 className="max-w-[240px] max-h-[180px] object-cover"
                 loading="lazy"
               />
             </a>
           );
         }
-        return (
-          <a
-            key={i}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
-            style={{
-              background: "var(--color-bg-secondary)",
-              border: "1px solid var(--color-border-light)",
-              color: "var(--color-text-secondary)",
-            }}
-          >
+        const label = (
+          <>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 1h4l4 4v7a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" />
               <path d="M8 1v4h4" />
             </svg>
-            <span className="max-w-[160px] truncate">{fileName}</span>
+            <span className="max-w-[160px] truncate">{item.name}</span>
+            {failed && <span style={{ color: "var(--color-text-tertiary)" }}>(non disponibile)</span>}
+          </>
+        );
+        const style = {
+          background: "var(--color-bg-secondary)",
+          border: "1px solid var(--color-border-light)",
+          color: "var(--color-text-secondary)",
+        };
+        return url ? (
+          <a
+            key={item.path}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
+            style={style}
+          >
+            {label}
           </a>
+        ) : (
+          <span key={item.path} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs" style={style}>
+            {label}
+          </span>
         );
       })}
     </div>
@@ -332,7 +377,7 @@ export function ChatMessages() {
                     {m.role === "user" ? "Tu" : "Tarry"}
                   </p>
                   {m.role === "user" && attachments.length > 0 && (
-                    <AttachmentDisplay paths={attachments} />
+                    <AttachmentDisplay items={attachments} />
                   )}
                   {m.role === "assistant" && steps.length > 0 && (
                     <ToolSteps steps={steps} />

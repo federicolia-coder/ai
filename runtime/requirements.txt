@@ -4,3 +4,4 @@ llama-cpp-python>=0.3.0
 pydantic>=2.10.0
 httpx>=0.28.0
 python-dotenv>=1.0.0
+pypdf>=5.0.0

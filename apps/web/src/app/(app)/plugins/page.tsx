@@ -12,6 +12,8 @@ interface PluginWithState extends Plugin {
 export default function PluginsPage() {
   const [plugins, setPlugins] = useState<PluginWithState[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPlugins();
@@ -48,23 +50,36 @@ export default function PluginsPage() {
     if (!user) return;
 
     const newState = !plugin.userEnabled;
+    setBusy(plugin.id);
+    setError(null);
 
-    if (plugin.userPluginId) {
-      await supabase
+    let userPluginId = plugin.userPluginId;
+    let failed = false;
+    if (userPluginId) {
+      const { error: updErr } = await supabase
         .from("user_plugins")
         .update({ enabled: newState })
-        .eq("id", plugin.userPluginId);
+        .eq("id", userPluginId);
+      failed = !!updErr;
     } else {
-      await supabase.from("user_plugins").insert({
-        user_id: user.id,
-        plugin_id: plugin.id,
-        enabled: newState,
-      });
+      const { data, error: insErr } = await supabase
+        .from("user_plugins")
+        .insert({ user_id: user.id, plugin_id: plugin.id, enabled: newState })
+        .select("id")
+        .single();
+      failed = !!insErr;
+      userPluginId = data?.id;
+    }
+    setBusy(null);
+
+    if (failed) {
+      setError(`Impossibile aggiornare "${plugin.name}". Riprova.`);
+      return;
     }
 
-    setPlugins(
-      plugins.map((p) =>
-        p.id === plugin.id ? { ...p, userEnabled: newState } : p
+    setPlugins((prev) =>
+      prev.map((p) =>
+        p.id === plugin.id ? { ...p, userEnabled: newState, userPluginId } : p
       )
     );
   }
@@ -85,7 +100,15 @@ export default function PluginsPage() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold mb-6">Plugin</h1>
+        <h1 className="text-xl font-semibold mb-1">Plugin</h1>
+        <p className="text-sm mb-6" style={{ color: "var(--color-text-secondary)" }}>
+          Scegli quali strumenti Tarry può usare nelle risposte.
+        </p>
+        {error && (
+          <p role="alert" className="text-sm mb-4" style={{ color: "var(--color-rose)" }}>
+            {error}
+          </p>
+        )}
 
         <div className="space-y-3">
           {plugins.map((p) => (
@@ -119,8 +142,12 @@ export default function PluginsPage() {
                   )}
                 </div>
                 <button
+                  role="switch"
+                  aria-checked={p.userEnabled}
+                  aria-label={`${p.userEnabled ? "Disattiva" : "Attiva"} ${p.name}`}
                   onClick={() => togglePlugin(p)}
-                  className="shrink-0 ml-4 relative w-9 h-5 rounded-lg transition-colors"
+                  disabled={busy === p.id}
+                  className="shrink-0 ml-4 relative w-9 h-5 rounded-lg transition-colors disabled:opacity-50"
                   style={{
                     background: p.userEnabled
                       ? "var(--color-accent)"
