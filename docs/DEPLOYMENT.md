@@ -22,7 +22,7 @@ tarry.testardstudios.it → Render.com (Frontend)
    ```
 5. Set Edge Function secrets:
    ```bash
-   supabase secrets set TARRY_RUNTIME_URL=https://your-vps:8000
+   supabase secrets set TARRY_RUNTIME_URL=https://your-runtime-domain
    supabase secrets set TARRY_RUNTIME_SECRET=your-secret
    supabase secrets set STRIPE_SECRET_KEY=sk_...
    supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
@@ -52,11 +52,17 @@ tarry.testardstudios.it → Render.com (Frontend)
 4. Download a GGUF model (~2B parameters) into `runtime/model/weights/`
    - Recommended: Qwen2.5-1.5B-Instruct or similar
 5. Create `.env` with `RUNTIME_SECRET`
-6. Start:
+6. Open ports 80 and 443 (Caddy gets a Let's Encrypt certificate for the runtime).
+   Set `RUNTIME_DOMAIN` in `.env` if you use your own domain; the default is
+   `85-155-151-119.sslip.io`, which resolves to the VPS IP.
+7. Start:
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
-7. Verify: `curl http://localhost:8000/health`
+8. Verify: `curl https://$RUNTIME_DOMAIN/health`
+9. Point Supabase at HTTPS: `supabase secrets set TARRY_RUNTIME_URL=https://$RUNTIME_DOMAIN`,
+   then add `RUNTIME_BIND=127.0.0.1` to `.env` and run `docker compose up -d` so port 8000
+   is no longer reachable from outside.
 
 ### Without Docker
 

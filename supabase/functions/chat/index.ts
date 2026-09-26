@@ -271,6 +271,19 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
+    // The runtime answers 503 "busy" when too many people are already waiting for an answer.
+    const runtimeFailure = async (res: Response) => {
+      const text = await res.text();
+      if (res.status === 503 && text.includes('"busy"')) {
+        return new Response(JSON.stringify({ error: "busy" }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("Runtime error:", res.status, text.slice(0, 500));
+      return runtimeUnavailable();
+    };
+
     const runtimeResponse = await fetch(`${RUNTIME_URL}/v1/chat/stream`, {
       method: "POST",
       headers: runtimeHeaders,
@@ -281,19 +294,13 @@ Deno.serve(async (req: Request) => {
       // Runtime not updated yet: use the non-streaming endpoint and send the answer as a single event.
       await runtimeResponse.body?.cancel();
       const legacy = await fetch(`${RUNTIME_URL}/v1/chat`, { method: "POST", headers: runtimeHeaders, body: runtimeBody });
-      if (!legacy.ok) {
-        console.error("Runtime error:", legacy.status, (await legacy.text()).slice(0, 500));
-        return runtimeUnavailable();
-      }
+      if (!legacy.ok) return await runtimeFailure(legacy);
       const result = await legacy.json();
       await saveResult(result);
       return new Response(sseEvent({ type: "done", result }), { headers: SSE_HEADERS });
     }
 
-    if (!runtimeResponse.ok || !runtimeResponse.body) {
-      console.error("Runtime error:", runtimeResponse.status, (await runtimeResponse.text()).slice(0, 500));
-      return runtimeUnavailable();
-    }
+    if (!runtimeResponse.ok || !runtimeResponse.body) return await runtimeFailure(runtimeResponse);
 
     const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
     const writer = writable.getWriter();

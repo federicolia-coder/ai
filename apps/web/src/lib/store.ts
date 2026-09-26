@@ -8,6 +8,8 @@ interface ChatState {
   isGenerating: boolean;
   sidebarOpen: boolean;
   pendingPrompt: string | null;
+  /** Position in the waiting line while Tarry is busy with other people. */
+  queuePosition: number | null;
 
   setConversations: (c: Conversation[]) => void;
   setCurrentConversation: (id: string | null) => void;
@@ -19,6 +21,7 @@ interface ChatState {
   toggleSidebar: () => void;
   setSidebarOpen: (v: boolean) => void;
   setPendingPrompt: (v: string | null) => void;
+  setQueuePosition: (v: number | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -28,6 +31,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isGenerating: false,
   sidebarOpen: true,
   pendingPrompt: null,
+  queuePosition: null,
 
   setConversations: (conversations) => set({ conversations }),
   setCurrentConversation: (id) => set({ currentConversationId: id }),
@@ -48,4 +52,5 @@ export const useChatStore = create<ChatState>((set) => ({
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   setPendingPrompt: (pendingPrompt) => set({ pendingPrompt }),
+  setQueuePosition: (queuePosition) => set({ queuePosition }),
 }));

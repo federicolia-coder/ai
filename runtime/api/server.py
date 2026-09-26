@@ -15,8 +15,11 @@ from runtime.config.settings import (
     RUNTIME_SECRET,
     MAX_CONCURRENT_REQUESTS,
     MAX_GENERATION_LENGTH,
+    MAX_QUEUED_REQUESTS,
+    QUEUE_TIMEOUT,
     REQUEST_TIMEOUT,
 )
+from runtime.api.gate import Gate, GateFull
 from runtime.model.local_provider import LocalModelProvider
 from runtime.model.provider import ModelProvider
 from runtime.tools.registry import ToolRegistry
@@ -53,12 +56,12 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 model: ModelProvider = LocalModelProvider()
 tools = ToolRegistry()
 agent: AgentLoop | None = None
-semaphore: asyncio.Semaphore | None = None
+gate: Gate | None = None
 
 
 @app.on_event("startup")
 async def startup():
-    global agent, semaphore
+    global agent, gate
     tools.register(CalculatorTool())
     tools.register(WebSearchTool())
     tools.register(HttpRequestTool())
@@ -75,7 +78,7 @@ async def startup():
     except Exception as e:
         logger.error("Failed to load model: %s", e)
     agent = AgentLoop(model, tools)
-    semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+    gate = Gate(MAX_CONCURRENT_REQUESTS, MAX_QUEUED_REQUESTS)
 
 
 def verify_auth(request: Request):
@@ -140,8 +143,10 @@ async def chat(request: Request, body: ChatRequest):
     if not model.is_loaded():
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    if not agent or not semaphore:
+    if not agent or not gate:
         raise HTTPException(status_code=503, detail="Runtime not initialized")
+    if gate.full():
+        raise HTTPException(status_code=503, detail="busy")
 
     # Extraction is CPU-bound (PDF parsing), so keep it off the event loop.
     files = await asyncio.gather(
@@ -150,14 +155,16 @@ async def chat(request: Request, body: ChatRequest):
     context = ToolContext(credentials=body.credentials, files=list(files))
 
     try:
-        async with asyncio.timeout(REQUEST_TIMEOUT):
-            async with semaphore:
+        async with gate.slot(QUEUE_TIMEOUT):
+            async with asyncio.timeout(REQUEST_TIMEOUT):
                 result = await agent.run(
                     messages=body.messages,
                     enabled_tools=body.tools,
                     max_tokens=body.max_tokens,
                     context=context,
                 )
+    except GateFull:
+        raise HTTPException(status_code=503, detail="busy")
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Request timed out")
     except Exception as e:
@@ -181,8 +188,10 @@ async def chat_stream(request: Request, body: ChatRequest):
 
     if not model.is_loaded():
         raise HTTPException(status_code=503, detail="Model not loaded")
-    if not agent or not semaphore:
+    if not agent or not gate:
         raise HTTPException(status_code=503, detail="Runtime not initialized")
+    if gate.full():
+        raise HTTPException(status_code=503, detail="busy")
 
     files = await asyncio.gather(
         *(asyncio.to_thread(extract_file, f.name, f.mime, f.data) for f in body.files)
@@ -192,8 +201,10 @@ async def chat_stream(request: Request, body: ChatRequest):
 
     async def produce(queue: asyncio.Queue) -> None:
         try:
-            async with asyncio.timeout(REQUEST_TIMEOUT):
-                async with semaphore:
+            if gate.must_wait():
+                await queue.put({"type": "queued", "position": gate.waiting + 1})
+            async with gate.slot(QUEUE_TIMEOUT):
+                async with asyncio.timeout(REQUEST_TIMEOUT):
                     async for event in agent.run_events(
                         messages=body.messages,
                         enabled_tools=body.tools,
@@ -202,6 +213,8 @@ async def chat_stream(request: Request, body: ChatRequest):
                         cancel=cancel,
                     ):
                         await queue.put(event)
+        except GateFull:
+            await queue.put({"type": "error", "error": "busy"})
         except asyncio.TimeoutError:
             await queue.put({"type": "error", "error": "timeout"})
         except Exception as e:

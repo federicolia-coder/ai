@@ -300,7 +300,7 @@ function TypingDots() {
 const STICK_THRESHOLD_PX = 120;
 
 export function ChatMessages() {
-  const { messages, isGenerating } = useChatStore();
+  const { messages, isGenerating, queuePosition } = useChatStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
 
@@ -376,7 +376,13 @@ export function ChatMessages() {
         {waitingForFirstEvent && (
           <li className="flex gap-3">
             <TarryMark size={28} className="shrink-0" />
-            <TypingDots />
+            {queuePosition ? (
+              <p className="flex h-7 items-center text-sm" role="status" style={{ color: "var(--color-text-secondary)" }}>
+                Tarry sta rispondendo ad altre persone. Sei {queuePosition === 1 ? "il prossimo" : `in coda, posizione ${queuePosition}`}.
+              </p>
+            ) : (
+              <TypingDots />
+            )}
           </li>
         )}
       </ol>

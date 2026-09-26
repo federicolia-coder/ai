@@ -48,6 +48,12 @@ describe("applyEvent", () => {
     expect(s.steps).toHaveLength(1);
   });
 
+  it("queued position is shown until work starts", () => {
+    const waiting = run([{ type: "queued", position: 2 }]);
+    expect(waiting.queued).toBe(2);
+    expect(run([{ type: "queued", position: 2 }, { type: "token", text: "Ciao" }]).queued).toBeNull();
+  });
+
   it("done overrides streamed text", () => {
     const s = run([{ type: "token", text: "bozza" }, { type: "done", result: { content: "Finale", steps: [] } }]);
     expect(s.content).toBe("Finale");
@@ -59,6 +65,7 @@ describe("errorMessage", () => {
   it("maps known server errors to Italian", () => {
     expect(errorMessage("Token limit reached")).toMatch(/token/);
     expect(errorMessage("timeout")).toMatch(/troppo tempo/);
+    expect(errorMessage("busy")).toMatch(/molto richiesto/);
   });
 
   it("falls back to a generic message", () => {

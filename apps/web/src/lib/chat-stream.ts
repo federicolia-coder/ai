@@ -16,6 +16,7 @@ export interface DoneResult {
 export type StreamEvent =
   | { type: "token"; text: string }
   | { type: "discard" }
+  | { type: "queued"; position: number }
   | { type: "step"; step: StreamStep }
   | { type: "done"; result: DoneResult }
   | { type: "error"; error: string };
@@ -25,12 +26,17 @@ export interface DraftState {
   steps: StreamStep[];
   done: DoneResult | null;
   error: string | null;
+  /** Position in the runtime's waiting line; null once work on this answer has started. */
+  queued: number | null;
 }
 
-export const emptyDraft = (): DraftState => ({ content: "", steps: [], done: null, error: null });
+export const emptyDraft = (): DraftState => ({ content: "", steps: [], done: null, error: null, queued: null });
 
 export function applyEvent(state: DraftState, event: StreamEvent): DraftState {
+  if (event.type !== "queued" && state.queued !== null) state = { ...state, queued: null };
   switch (event.type) {
+    case "queued":
+      return { ...state, queued: event.position };
     case "token":
       return { ...state, content: state.content + event.text };
     case "discard":
@@ -90,6 +96,7 @@ export function createSseParser() {
 }
 
 const ERRORS: Record<string, string> = {
+  busy: "Tarry è molto richiesto in questo momento. Riprova tra un minuto.",
   "Token limit reached": "Hai esaurito i token di questo mese. Puoi passare a Plus o Pro dalle impostazioni.",
   "Too many requests. Please wait a moment.": "Troppi messaggi in poco tempo. Attendi un minuto e riprova.",
   "AI runtime unavailable": "Tarry non è raggiungibile in questo momento. Riprova tra poco.",

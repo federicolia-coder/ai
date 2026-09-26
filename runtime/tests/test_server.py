@@ -21,7 +21,7 @@ def client(monkeypatch):
             return {"content": "ok", "tools_used": [], "steps": [], "input_tokens": 1, "output_tokens": 1, "total_tokens": 2}
 
     monkeypatch.setattr(server, "agent", FakeAgent())
-    monkeypatch.setattr(server, "semaphore", __import__("asyncio").Semaphore(1))
+    monkeypatch.setattr(server, "gate", server.Gate(1, 2))
     monkeypatch.setattr(server.model, "is_loaded", lambda: True)
     c = TestClient(server.app)
     c.captured = captured
@@ -97,7 +97,7 @@ def stream_client(monkeypatch):
             yield {"type": "done", "result": {"content": "Fa 42.", "tools_used": ["calculate"], "steps": [], "input_tokens": 1, "output_tokens": 2, "total_tokens": 3}}
 
     monkeypatch.setattr(server, "agent", FakeStreamingAgent())
-    monkeypatch.setattr(server, "semaphore", __import__("asyncio").Semaphore(1))
+    monkeypatch.setattr(server, "gate", server.Gate(1, 2))
     monkeypatch.setattr(server.model, "is_loaded", lambda: True)
     return TestClient(server.app)
 
@@ -127,3 +127,25 @@ def test_stream_reports_agent_failure_as_error_event(stream_client, monkeypatch)
     events = _parse_sse(r.text)
     assert events == [{"type": "error", "error": "internal"}]
     assert "boom" not in r.text
+
+
+def test_busy_when_queue_is_full(stream_client, monkeypatch):
+    gate = server.Gate(1, 0)
+    gate.active = 1
+    monkeypatch.setattr(server, "gate", gate)
+    r = stream_client.post("/v1/chat/stream", json={"messages": []}, headers=AUTH)
+    assert r.status_code == 503
+    assert r.json()["detail"] == "busy"
+    r = stream_client.post("/v1/chat", json={"messages": []}, headers=AUTH)
+    assert r.status_code == 503
+
+
+def test_stream_announces_queue_then_times_out(stream_client, monkeypatch):
+    gate = server.Gate(1, 3)
+    gate.active = 1  # a slot is taken...
+    gate._sem = __import__("asyncio").Semaphore(0)  # ...and never frees up
+    monkeypatch.setattr(server, "gate", gate)
+    monkeypatch.setattr(server, "QUEUE_TIMEOUT", 0.05)
+    r = stream_client.post("/v1/chat/stream", json={"messages": []}, headers=AUTH)
+    assert _parse_sse(r.text) == [{"type": "queued", "position": 1}, {"type": "error", "error": "busy"}]
+    assert gate.waiting == 0

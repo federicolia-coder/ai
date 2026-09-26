@@ -1,9 +1,20 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Subscription, ApiKey, Usage } from "@/types/database";
+import type { Profile, Subscription, Usage } from "@/types/database";
+
+const STATUS_LABELS: Record<string, string> = {
+  active: "Attivo",
+  trialing: "In prova",
+  past_due: "Pagamento in sospeso",
+  canceled: "Annullato",
+  incomplete: "Incompleto",
+  unpaid: "Non pagato",
+};
+
+const CONFIRM_WORD = "ELIMINA";
 
 const PLAN_DETAILS: Record<string, { tokens: string; price: string; color: string }> = {
   free: { tokens: "100K", price: "€0", color: "var(--color-teal)" },
@@ -24,12 +35,11 @@ function SettingsContent() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [newKeyName, setNewKeyName] = useState("");
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const [tab, setTab] = useState<
-    "account" | "subscription" | "usage" | "api_keys" | "plugins"
-  >("account");
+  const router = useRouter();
+  const [tab, setTab] = useState<"account" | "subscription" | "usage">("account");
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
 
@@ -47,13 +57,9 @@ function SettingsContent() {
 
   async function loadSettings() {
     const supabase = createClient();
-    const [profileRes, subRes, keysRes, usageRes] = await Promise.all([
+    const [profileRes, subRes, usageRes] = await Promise.all([
       supabase.from("profiles").select("*").limit(1),
       supabase.from("subscriptions").select("*").limit(1),
-      supabase
-        .from("api_keys")
-        .select("*")
-        .order("created_at", { ascending: false }),
       supabase
         .from("usage")
         .select("*")
@@ -62,7 +68,6 @@ function SettingsContent() {
     ]);
     if (profileRes.data?.[0]) setProfile(profileRes.data[0] as Profile);
     if (subRes.data?.[0]) setSubscription(subRes.data[0] as Subscription);
-    if (keysRes.data) setApiKeys(keysRes.data as ApiKey[]);
     if (usageRes.data?.[0]) setUsage(usageRes.data[0] as Usage);
   }
 
@@ -125,47 +130,35 @@ function SettingsContent() {
     }
   }
 
-  async function createApiKey() {
-    if (!newKeyName.trim()) return;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const rawKey = `tarry_${crypto.randomUUID().replace(/-/g, "")}`;
-    const prefix = rawKey.slice(0, 12);
-
-    const encoder = new TextEncoder();
-    const data = encoder.encode(rawKey);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const keyHash = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    const { data: inserted } = await supabase
-      .from("api_keys")
-      .insert({
-        user_id: user.id,
-        name: newKeyName.trim(),
-        key_hash: keyHash,
-        key_prefix: prefix,
-      })
-      .select()
-      .single();
-
-    if (inserted) {
-      setApiKeys([inserted as ApiKey, ...apiKeys]);
-      setCreatedKey(rawKey);
-      setNewKeyName("");
+  async function deleteAccount() {
+    if (confirmText !== CONFIRM_WORD) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ confirm: CONFIRM_WORD }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        setDeleteError(
+          data.error === "Subscription cancel failed"
+            ? "Non siamo riusciti ad annullare l'abbonamento, quindi l'account non è stato eliminato. Riprova o scrivici."
+            : "Eliminazione non riuscita. Riprova tra poco."
+        );
+        return;
+      }
+      await supabase.auth.signOut();
+      router.replace("/?account=deleted");
+    } catch {
+      setDeleteError("Connessione assente o instabile. Riprova.");
+    } finally {
+      setDeleting(false);
     }
-  }
-
-  async function deleteApiKey(id: string) {
-    const supabase = createClient();
-    await supabase.from("api_keys").delete().eq("id", id);
-    setApiKeys(apiKeys.filter((k) => k.id !== id));
   }
 
   function formatTokens(n: number): string {
@@ -178,7 +171,6 @@ function SettingsContent() {
     { key: "account" as const, label: "Account" },
     { key: "subscription" as const, label: "Abbonamento" },
     { key: "usage" as const, label: "Utilizzo" },
-    { key: "api_keys" as const, label: "API Keys" },
   ];
 
   return (
@@ -262,6 +254,42 @@ function SettingsContent() {
           </div>
         )}
 
+        {tab === "account" && profile && (
+          <div className="card mt-4">
+            <h2 className="text-sm font-medium">Elimina account</h2>
+            <p className="mt-1 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+              Cancella per sempre conversazioni, file, connettori e dati di utilizzo. Se hai un
+              abbonamento, viene annullato subito. Non si può tornare indietro.
+            </p>
+            <label htmlFor="confirm-delete" className="mt-4 block text-xs font-medium" style={{ color: "var(--color-text-tertiary)" }}>
+              Scrivi {CONFIRM_WORD} per confermare
+            </label>
+            <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+              <input
+                id="confirm-delete"
+                type="text"
+                className="input-field flex-1"
+                autoComplete="off"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+              />
+              <button
+                onClick={deleteAccount}
+                disabled={confirmText !== CONFIRM_WORD || deleting}
+                className="btn-secondary text-sm"
+                style={{ color: "var(--color-rose)", borderColor: "var(--color-rose)" }}
+              >
+                {deleting ? "Eliminazione..." : "Elimina account"}
+              </button>
+            </div>
+            {deleteError && (
+              <p className="mt-2 text-sm" role="alert" style={{ color: "var(--color-rose)" }}>
+                {deleteError}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Subscription Tab */}
         {tab === "subscription" && subscription && (
           <div className="space-y-4">
@@ -283,7 +311,7 @@ function SettingsContent() {
                           : "var(--color-text-tertiary)",
                     }}
                   />
-                  {subscription.status}
+                  {STATUS_LABELS[subscription.status] ?? subscription.status}
                 </span>
               </div>
               <p
@@ -426,79 +454,6 @@ function SettingsContent() {
           </div>
         )}
 
-        {/* API Keys Tab */}
-        {tab === "api_keys" && (
-          <div className="space-y-4">
-            <div className="card">
-              <h3 className="text-sm font-medium mb-3">Crea API Key</h3>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  className="input-field flex-1"
-                  placeholder="Nome della chiave"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                />
-                <button
-                  onClick={createApiKey}
-                  className="btn-primary text-sm"
-                  disabled={!newKeyName.trim()}
-                >
-                  Crea
-                </button>
-              </div>
-              {createdKey && (
-                <div
-                  className="mt-3 rounded-lg p-3 text-xs font-mono break-all"
-                  style={{
-                    background: "var(--color-amber-soft)",
-                    border: "1px solid var(--color-amber)",
-                  }}
-                >
-                  <p
-                    className="text-xs font-sans font-medium mb-1"
-                    style={{ color: "var(--color-amber)" }}
-                  >
-                    Copia questa chiave ora: non verrà più mostrata.
-                  </p>
-                  {createdKey}
-                </div>
-              )}
-            </div>
-
-            {apiKeys.length > 0 && (
-              <div className="card">
-                <h3 className="text-sm font-medium mb-3">Le tue chiavi</h3>
-                <div className="space-y-2">
-                  {apiKeys.map((k) => (
-                    <div
-                      key={k.id}
-                      className="flex items-center justify-between py-2 border-b last:border-0"
-                      style={{ borderColor: "var(--color-border-light)" }}
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{k.name}</p>
-                        <p
-                          className="text-xs font-mono"
-                          style={{ color: "var(--color-text-tertiary)" }}
-                        >
-                          {k.key_prefix}...
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => deleteApiKey(k.id)}
-                        className="btn-ghost text-xs"
-                        style={{ color: "var(--color-rose)" }}
-                      >
-                        Revoca
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

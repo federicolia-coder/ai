@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/manrope";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 const title = "Tarry, l'assistente AI che controlla prima di rispondere";
 const description =
   "Tarry cerca sul web, fa i calcoli con una calcolatrice vera e legge i file che alleghi. Ti mostra ogni passaggio. Piano gratuito con 100.000 token al mese.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title,
   description,
   icons: {

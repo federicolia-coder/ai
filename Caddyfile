@@ -1,0 +1,6 @@
+{$RUNTIME_DOMAIN} {
+	reverse_proxy runtime:8000 {
+		# Stream answers token by token instead of buffering them.
+		flush_interval -1
+	}
+}

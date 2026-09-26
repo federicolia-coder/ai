@@ -61,6 +61,7 @@ export function Composer() {
     isGenerating,
     pendingPrompt,
     setPendingPrompt,
+    setQueuePosition,
   } = useChatStore();
 
   useEffect(() => {
@@ -300,7 +301,10 @@ export function Composer() {
           const { value, done } = await reader.read();
           const events = done ? parser.end() : parser.feed(decoder.decode(value, { stream: true }));
           for (const event of events) draft = applyEvent(draft, event);
-          if (events.length) schedule();
+          if (events.length) {
+            setQueuePosition(draft.queued);
+            schedule();
+          }
           if (done) break;
         }
         cancelAnimationFrame(frame);
@@ -326,6 +330,7 @@ export function Composer() {
       };
       addMessage(errorMsg);
     } finally {
+      setQueuePosition(null);
       setGenerating(false);
     }
   }

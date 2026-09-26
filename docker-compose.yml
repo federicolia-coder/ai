@@ -2,13 +2,17 @@ services:
   runtime:
     build: .
     ports:
-      - "8000:8000"
+      # Set RUNTIME_BIND=127.0.0.1 once Supabase talks to the runtime over HTTPS (caddy below).
+      - "${RUNTIME_BIND:-0.0.0.0}:8000:8000"
     environment:
       - RUNTIME_HOST=0.0.0.0
       - RUNTIME_PORT=8000
       - RUNTIME_SECRET=${RUNTIME_SECRET}
       - MODEL_PATH=/app/model/weights/qwen2.5-3b-instruct-q4_k_m.gguf
       - MAX_CONCURRENT_REQUESTS=1
+      # Beyond this many waiting requests Tarry answers "busy" at once instead of timing out.
+      - MAX_QUEUED_REQUESTS=${MAX_QUEUED_REQUESTS:-4}
+      - QUEUE_TIMEOUT=${QUEUE_TIMEOUT:-30}
       - MAX_CONTEXT_LENGTH=4096
       - MAX_GENERATION_LENGTH=1024
       - MAX_TOOL_CALLS=3
@@ -25,3 +29,26 @@ services:
       resources:
         limits:
           memory: 3.5G
+
+  # HTTPS in front of the runtime: prompts, files and connector tokens must not travel in clear text.
+  # RUNTIME_DOMAIN defaults to 85-155-151-119.sslip.io, which resolves to the VPS IP with no DNS setup;
+  # set it in .env to use your own domain.
+  # The certificate comes from Let's Encrypt, so ports 80 and 443 must be open on the VPS.
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - RUNTIME_DOMAIN=${RUNTIME_DOMAIN:-85-155-151-119.sslip.io}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - runtime
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

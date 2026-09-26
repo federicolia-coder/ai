@@ -7,7 +7,7 @@ export default function TermsPage() {
     <article className="prose-tarry">
       <h1>Condizioni d&apos;uso</h1>
       <p style={{ color: "var(--color-text-tertiary)" }}>
-        Ultimo aggiornamento: 24 settembre 2026
+        Ultimo aggiornamento: 26 settembre 2026
       </p>
 
       <h2>1. Accettazione</h2>
@@ -19,9 +19,10 @@ export default function TermsPage() {
 
       <h2>2. Descrizione del Servizio</h2>
       <p>
-        Tarry AI e un assistente basato su intelligenza artificiale che fornisce
+        Tarry AI è un assistente basato su intelligenza artificiale che fornisce
         risposte testuali, utilizza strumenti (calcolo, ricerca web, lettura
-        file) e supporta un sistema di plugin estensibile. Il Servizio e
+        file), supporta plugin e può collegarsi a servizi esterni (GitHub, Notion,
+        webhook) che scegli tu. Il Servizio è
         disponibile in versione gratuita e a pagamento.
       </p>
 
@@ -29,51 +30,52 @@ export default function TermsPage() {
       <p>
         Per utilizzare il Servizio devi creare un account con un indirizzo email
         valido. Sei responsabile della sicurezza delle tue credenziali e di ogni
-        attivita svolta tramite il tuo account.
+        attività svolta tramite il tuo account.
       </p>
 
       <h2>4. Utilizzo accettabile</h2>
       <p>Ti impegni a non utilizzare il Servizio per:</p>
       <ul>
-        <li>Attivita illegali o che violano diritti di terzi</li>
+        <li>Attività illegali o che violano diritti di terzi</li>
         <li>Generare contenuti dannosi, diffamatori o discriminatori</li>
         <li>Tentare di aggirare limiti, sicurezza o autenticazione</li>
         <li>Abusare delle API o generare traffico automatizzato eccessivo</li>
         <li>Rivendere o ridistribuire il Servizio senza autorizzazione</li>
+        <li>Collegare account o inviare file su cui non hai i diritti</li>
       </ul>
 
       <h2>5. Contenuti generati dall&apos;AI</h2>
       <p>
         Le risposte generate dall&apos;AI possono contenere errori o
         imprecisioni. Non garantiamo la correttezza, completezza o adeguatezza
-        delle risposte. L&apos;utente e responsabile della verifica e
+        delle risposte. L&apos;utente è responsabile della verifica e
         dell&apos;uso dei contenuti generati.
       </p>
 
-      <h2>6. Proprieta intellettuale</h2>
+      <h2>6. Proprietà intellettuale</h2>
       <p>
-        Il Servizio, il codice, il design e il marchio Tarry sono di proprieta
+        Il Servizio, il codice, il design e il marchio Tarry sono di proprietà
         di TestardStudios. I contenuti creati dall&apos;utente tramite il
-        Servizio restano di proprieta dell&apos;utente.
+        Servizio restano di proprietà dell&apos;utente.
       </p>
 
       <h2>7. Piani e pagamenti</h2>
       <p>
         I piani a pagamento vengono fatturati mensilmente tramite Stripe. Puoi
-        annullare in qualsiasi momento dalle Impostazioni. Il rimborso non e
-        previsto per il periodo gia pagato. I limiti di token si resettano a
-        ogni nuovo periodo di fatturazione.
+        annullare in qualsiasi momento dalle Impostazioni. Il rimborso non è
+        previsto per il periodo già pagato. I limiti di token si rinnovano a
+        ogni mese.
       </p>
 
-      <h2>8. Limitazione di responsabilita</h2>
+      <h2>8. Limitazione di responsabilità</h2>
       <p>
-        Il Servizio e fornito &quot;cosi com&apos;e&quot; senza garanzie di
-        alcun tipo. TestardStudios non e responsabile per danni diretti,
+        Il Servizio è fornito &quot;così com&apos;è&quot; senza garanzie di
+        alcun tipo. TestardStudios non è responsabile per danni diretti,
         indiretti, incidentali o consequenziali derivanti dall&apos;uso del
         Servizio, inclusi danni derivanti da risposte AI errate.
       </p>
 
-      <h2>9. Disponibilita del Servizio</h2>
+      <h2>9. Disponibilità del Servizio</h2>
       <p>
         Ci impegniamo a mantenere il Servizio disponibile, ma non garantiamo un
         uptime del 100%. Potremmo sospendere o interrompere il Servizio per
@@ -84,7 +86,7 @@ export default function TermsPage() {
       <p>
         Possiamo sospendere o terminare il tuo account in caso di violazione
         delle presenti Condizioni. Puoi eliminare il tuo account in qualsiasi
-        momento dalle Impostazioni.
+        momento da Impostazioni &rarr; Account.
       </p>
 
       <h2>11. Modifiche</h2>
@@ -97,7 +99,7 @@ export default function TermsPage() {
       <h2>12. Legge applicabile</h2>
       <p>
         Le presenti Condizioni sono regolate dalla legge italiana. Per ogni
-        controversia e competente il Foro del luogo di residenza del
+        controversia è competente il Foro del luogo di residenza del
         consumatore, ai sensi del Codice del Consumo (D.Lgs. 206/2005).
       </p>
 
