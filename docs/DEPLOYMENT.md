@@ -52,7 +52,9 @@ tarry.testardstudios.it → Render.com (Frontend)
 4. Download a GGUF model (~2B parameters) into `runtime/model/weights/`
    - Recommended: Qwen2.5-1.5B-Instruct or similar
 5. Create `.env` with `RUNTIME_SECRET`
-6. Open ports 80 and 443 (Caddy gets a Let's Encrypt certificate for the runtime).
+6. HTTPS: if ports 80 and 443 are free, add `COMPOSE_PROFILES=https` to `.env` so Caddy gets a
+   Let's Encrypt certificate for the runtime. If another web server already owns them, proxy
+   `RUNTIME_DOMAIN` to `127.0.0.1:8000` from that server instead.
    Set `RUNTIME_DOMAIN` in `.env` if you use your own domain; the default is
    `85-155-151-119.sslip.io`, which resolves to the VPS IP.
 7. Start:

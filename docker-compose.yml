@@ -34,8 +34,10 @@ services:
   # RUNTIME_DOMAIN defaults to 85-155-151-119.sslip.io, which resolves to the VPS IP with no DNS setup;
   # set it in .env to use your own domain.
   # The certificate comes from Let's Encrypt, so ports 80 and 443 must be open on the VPS.
+  # Opt-in (ports 80/443 are often taken on a shared VPS): COMPOSE_PROFILES=https in .env.
   caddy:
     image: caddy:2-alpine
+    profiles: ["https"]
     ports:
       - "80:80"
       - "443:443"
