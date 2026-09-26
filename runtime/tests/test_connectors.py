@@ -85,7 +85,7 @@ async def test_github_issues_excludes_pull_requests(mock_http):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("repo", ["nope", "a/b/c", "../x", "a b/c"])
+@pytest.mark.parametrize("repo", ["a/b/c", "../x", "a b/c"])
 async def test_github_rejects_bad_repo(repo, mock_http):
     result = await GitHubIssuesTool().execute({"repo": repo}, GH)
     assert "owner/name" in result["error"]
@@ -106,19 +106,53 @@ async def test_github_issues_without_repo_lists_across_repos(mock_http):
     assert req.url.params["filter"] == "all"
 
 
-@pytest.mark.asyncio
-async def test_github_guessed_repo_returns_real_names(mock_http):
+def _repos_handler(issues_by_repo):
     def handler(r):
         if r.url.path == "/user/repos":
             return httpx.Response(200, json=[{"full_name": "fede/tarry"}, {"full_name": "fede/ai"}])
+        for repo, issues in issues_by_repo.items():
+            if r.url.path == f"/repos/{repo}/issues":
+                return httpx.Response(200, json=issues)
         return httpx.Response(404, json={"message": "Not Found"})
+    return handler
 
-    mock_http["handler"] = handler
-    result = await GitHubIssuesTool().execute({"repo": "user/repository"}, GH)
+
+@pytest.mark.asyncio
+async def test_github_guessed_repo_returns_real_names(mock_http):
+    mock_http["handler"] = _repos_handler({})
+    result = await GitHubFileTool().execute({"repo": "yourusername/yourrepository"}, GH)
     assert "not found" in result["error"]
     assert result["your_repos"] == ["fede/tarry", "fede/ai"]
-    result = await GitHubFileTool().execute({"repo": "yourusername/yourrepository"}, GH)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("guess", ["user/repository", "nope"])
+async def test_github_issues_unknown_repo_falls_back_to_all(guess, mock_http):
+    issue = {"number": 9, "title": "Bug", "state": "open", "user": {"login": "a"}, "repository": {"full_name": "fede/ai"}}
+    base = _repos_handler({})
+    mock_http["handler"] = lambda r: httpx.Response(200, json=[issue]) if r.url.path == "/user/issues" else base(r)
+    result = await GitHubIssuesTool().execute({"repo": guess}, GH)
+    assert result["repo"] == "all"
+    assert result["issues"][0]["repo"] == "fede/ai"
+    assert guess in result["note"]
     assert result["your_repos"] == ["fede/tarry", "fede/ai"]
+
+
+@pytest.mark.asyncio
+async def test_github_bare_name_resolves_to_users_repo(mock_http):
+    issue = {"number": 3, "title": "Bug", "state": "open", "user": {"login": "a"}}
+    mock_http["handler"] = _repos_handler({"fede/ai": [issue]})
+    result = await GitHubIssuesTool().execute({"repo": "ai"}, GH)
+    assert result["repo"] == "fede/ai"
+    assert result["issues"][0]["number"] == 3
+
+
+@pytest.mark.asyncio
+async def test_github_guessed_owner_is_corrected(mock_http):
+    mock_http["handler"] = _repos_handler({"fede/tarry": []})
+    result = await GitHubIssuesTool().execute({"repo": "tarry/tarry"}, GH)
+    assert result["repo"] == "fede/tarry"
+    assert result["count"] == 0
 
 
 @pytest.mark.asyncio

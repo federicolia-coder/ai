@@ -10,6 +10,7 @@ from runtime.tools.base import Tool, ToolContext, ToolDefinition
 
 API = "https://api.github.com"
 REPO_RE = re.compile(r"^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$")
+NAME_RE = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
 MAX_FILE_CHARS = 2500
 
 
@@ -46,14 +47,41 @@ async def _get(token: str, path: str, params: dict[str, Any] | None = None) -> h
         return await client.get(f"{API}{path}", headers=_headers(token), params=params)
 
 
-async def _not_found(token: str, repo: str) -> dict[str, Any]:
+async def _user_repos(token: str) -> list[str] | None:
+    resp = await _get(token, "/user/repos", {"sort": "updated", "per_page": 100})
+    if resp.status_code != 200:
+        return None
+    return [r.get("full_name") for r in resp.json() if r.get("full_name")]
+
+
+def _match_by_name(repos: list[str], name: str) -> str | None:
+    """'ai' or a guessed 'someone/ai' -> the user's only repository called 'ai'."""
+    short = name.split("/")[-1].lower()
+    matches = [r for r in repos if r.split("/")[-1].lower() == short]
+    return matches[0] if len(matches) == 1 else None
+
+
+async def _not_found(token: str, repo: str, repos: list[str] | None = None) -> dict[str, Any]:
     """The model often guesses repo names; answer with the real ones so it can retry correctly."""
     error: dict[str, Any] = {"error": f"Repository {repo} not found or not visible to the token."}
-    resp = await _get(token, "/user/repos", {"sort": "updated", "per_page": 30})
-    if resp.status_code == 200:
-        error["your_repos"] = [r.get("full_name") for r in resp.json()][:15]
+    if repos is None:
+        repos = await _user_repos(token)
+    if repos is not None:
+        error["your_repos"] = repos[:15]
         error["hint"] = "Use one of your_repos, or ask the user which repository they mean."
     return error
+
+
+async def _resolve(token: str, raw: str) -> tuple[str | None, list[str] | None]:
+    """Full name to use for `raw` (owner/name, URL or bare name) and the user's repos if fetched."""
+    repo = _repo({"repo": raw})
+    if repo:
+        return repo, None
+    bare = raw.strip().strip("/")
+    if not NAME_RE.match(bare):
+        return None, None
+    repos = await _user_repos(token)
+    return (_match_by_name(repos, bare) if repos else None), repos
 
 
 def _issue(i: dict[str, Any]) -> dict[str, Any]:
@@ -115,7 +143,7 @@ class GitHubIssuesTool(Tool):
             parameters={
                 "type": "object",
                 "properties": {
-                    "repo": {"type": "string", "description": "Optional: repository as owner/name, only if the user named it"},
+                    "repo": {"type": "string", "description": "Optional: repository (owner/name or just the name), only if the user named it"},
                     "state": {"type": "string", "enum": ["open", "closed", "all"], "default": "open"},
                 },
                 "required": [],
@@ -129,27 +157,48 @@ class GitHubIssuesTool(Tool):
         state = params.get("state") if params.get("state") in ("open", "closed", "all") else "open"
         raw_repo = str(params.get("repo") or "").strip()
         if not raw_repo:
-            # Every issue the token can see in repositories the user owns or belongs to.
-            resp = await _get(token, "/user/issues", {"filter": "all", "state": state, "per_page": 50})
-            if resp.status_code != 200:
-                return _error_for(resp)
-            issues = [
-                {"repo": (i.get("repository") or {}).get("full_name"), **_issue(i)}
-                for i in resp.json()
-                if "pull_request" not in i
-            ]
-            return {"repo": "all", "state": state, "count": len(issues), "issues": issues[:20]}
+            return await self._all(token, state)
 
-        repo = _repo(params)
+        repo, repos = await _resolve(token, raw_repo)
         if not repo:
+            if repos is not None:
+                return await self._all(token, state, missing=raw_repo, repos=repos)
             return {"error": "repo must be in the form owner/name, or empty for all repositories"}
         resp = await _get(token, f"/repos/{repo}/issues", {"state": state, "per_page": 30})
         if resp.status_code == 404:
-            return await _not_found(token, repo)
+            # A guessed owner: retry with the user's repository of the same name, if there is exactly one.
+            repos = repos if repos is not None else await _user_repos(token)
+            match = _match_by_name(repos or [], repo)
+            if match and match != repo:
+                repo = match
+                resp = await _get(token, f"/repos/{repo}/issues", {"state": state, "per_page": 30})
+            elif repos is not None:
+                # Usually a made-up name: answer with every repository instead of an error to recover from.
+                return await self._all(token, state, missing=repo, repos=repos)
+            else:
+                return await _not_found(token, repo, repos)
         if resp.status_code != 200:
             return _error_for(resp)
         issues = [_issue(i) for i in resp.json() if "pull_request" not in i]
         return {"repo": repo, "state": state, "count": len(issues), "issues": issues[:15]}
+
+
+    @staticmethod
+    async def _all(token: str, state: str, missing: str | None = None, repos: list[str] | None = None) -> dict[str, Any]:
+        """Every issue the token can see in repositories the user owns or belongs to."""
+        resp = await _get(token, "/user/issues", {"filter": "all", "state": state, "per_page": 50})
+        if resp.status_code != 200:
+            return _error_for(resp)
+        issues = [
+            {"repo": (i.get("repository") or {}).get("full_name"), **_issue(i)}
+            for i in resp.json()
+            if "pull_request" not in i
+        ]
+        result: dict[str, Any] = {"repo": "all", "state": state, "count": len(issues), "issues": issues[:20]}
+        if missing:
+            result["note"] = f"No repository called {missing}: these are the issues across all the user's repositories."
+            result["your_repos"] = (repos or [])[:15]
+        return result
 
 
 class GitHubFileTool(Tool):
@@ -171,15 +220,23 @@ class GitHubFileTool(Tool):
         token = common.credential(context, "github", "token")
         if not token:
             return common.not_connected("GitHub")
-        repo = _repo(params)
+        repo, repos = await _resolve(token, str(params.get("repo") or ""))
         if not repo:
+            if repos is not None:
+                return await _not_found(token, str(params.get("repo")), repos)
             return {"error": "repo must be in the form owner/name"}
         path = str(params.get("path") or "").strip().strip("/")
         if ".." in path.split("/"):
             return {"error": "Invalid path"}
         resp = await _get(token, f"/repos/{repo}/contents/{quote(path)}")
-        if resp.status_code == 404 and not path:
-            return await _not_found(token, repo)
+        if resp.status_code == 404:
+            repos = repos if repos is not None else await _user_repos(token)
+            match = _match_by_name(repos or [], repo)
+            if match and match != repo:
+                repo = match
+                resp = await _get(token, f"/repos/{repo}/contents/{quote(path)}")
+            elif not path:
+                return await _not_found(token, repo, repos)
         if resp.status_code != 200:
             return _error_for(resp)
         data = resp.json()
