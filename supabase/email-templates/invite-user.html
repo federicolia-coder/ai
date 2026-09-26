@@ -1,54 +1,40 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Un invito per te su Tarry</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Inter',system-ui,-apple-system,sans-serif;color:#18181b;line-height:1.6;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 16px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;border:1px solid #e4e4e7;overflow:hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="padding:32px 32px 24px;text-align:center;">
-              <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;">
-                <circle cx="16" cy="16" r="14" fill="#eab308"/>
-                <circle cx="11" cy="14" r="2.5" fill="white"/>
-                <circle cx="21" cy="14" r="2.5" fill="#7c3aed"/>
-                <path d="M11 21c2.5 3 7.5 3 10 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              <h1 style="margin:16px 0 0;font-size:20px;font-weight:700;color:#18181b;">Sei stato invitato</h1>
-            </td>
-          </tr>
-          <!-- Body -->
-          <tr>
-            <td style="padding:0 32px 32px;">
-              <p style="margin:0 0 24px;font-size:15px;color:#52525b;">
-                Sei stato invitato a usare Tarry, l'assistente AI di TestardStudios. Clicca il pulsante qui sotto per accettare l'invito e creare il tuo account.
-              </p>
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center">
-                    <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#eab308;color:#18181b;text-decoration:none;font-weight:600;font-size:14px;padding:12px 32px;border-radius:8px;">
-                      Accetta invito
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding:20px 32px;border-top:1px solid #e4e4e7;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#a1a1aa;">
-                Tarry AI &mdash; TestardStudios
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+<body style="margin:0;padding:0;background-color:#f5f4ef;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f4ef">
+<tr><td align="center" style="padding:40px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:480px;border:1px solid #e7e5dc;border-radius:12px;">
+<tr><td style="padding:32px 32px 8px 32px;font-family:Arial,Helvetica,sans-serif;">
+<p style="margin:0;font-size:18px;font-weight:bold;color:#1c1b17;">Tarry</p>
+</td></tr>
+<tr><td style="padding:16px 32px 0 32px;font-family:Arial,Helvetica,sans-serif;">
+<h1 style="margin:0 0 12px 0;font-size:22px;line-height:28px;font-weight:bold;color:#1c1b17;">Un invito per te su Tarry</h1>
+<p style="margin:0 0 24px 0;font-size:15px;line-height:22px;color:#4a4840;">Hai ricevuto un invito a usare Tarry, l'assistente AI di TestardStudios. Accetta l'invito per creare il tuo account.</p>
+</td></tr>
+<tr><td style="padding:0 32px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<tr><td bgcolor="#1c1b17" style="border-radius:8px;">
+<a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:8px;">Accetta l'invito</a>
+</td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:24px 32px 0 32px;font-family:Arial,Helvetica,sans-serif;">
+<p style="margin:0 0 6px 0;font-size:13px;line-height:19px;color:#6b6960;">Se il pulsante non funziona, copia e incolla questo link nel browser:</p>
+<p style="margin:0;font-size:13px;line-height:19px;word-break:break-all;"><a href="{{ .ConfirmationURL }}" target="_blank" style="color:#8a6a00;text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
+</td></tr>
+<tr><td style="padding:24px 32px 32px 32px;font-family:Arial,Helvetica,sans-serif;">
+<p style="margin:0;font-size:13px;line-height:19px;color:#6b6960;">Se non ti aspettavi questo invito, puoi ignorare questa email.</p>
+</td></tr>
+<tr><td style="padding:16px 32px;border-top:1px solid #e7e5dc;font-family:Arial,Helvetica,sans-serif;">
+<p style="margin:0;font-size:12px;color:#8f8c80;">Tarry, assistente AI di TestardStudios</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
 </body>
 </html>
