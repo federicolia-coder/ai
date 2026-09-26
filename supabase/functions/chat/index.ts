@@ -139,16 +139,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check token usage
-    const { data: usage } = await adminClient
-      .from("usage")
-      .select("*")
-      .eq("user_id", user.id)
-      .lte("period_start", new Date().toISOString())
-      .gt("period_end", new Date().toISOString())
-      .single();
+    // Check token usage (opens a new monthly period when the previous one has expired)
+    const { data: usage, error: usageError } = await adminClient.rpc("ensure_current_usage", {
+      p_user_id: user.id,
+    });
 
-    if (!usage) {
+    if (usageError || !usage?.id) {
+      console.error("Usage lookup failed:", usageError?.message);
       return new Response(
         JSON.stringify({ error: "Usage record not found" }),
         {
@@ -257,7 +254,11 @@ Deno.serve(async (req: Request) => {
           output_tokens: result.output_tokens || 0,
         },
       });
-      await adminClient.rpc("increment_token_usage", { p_user_id: userId, p_tokens: totalTokens });
+      const { error: usageErr } = await adminClient.rpc("increment_token_usage", {
+        p_user_id: userId,
+        p_tokens: totalTokens,
+      });
+      if (usageErr) console.error("Token usage update failed:", usageErr.message);
       const { data: conv } = await supabase.from("conversations").select("title").eq("id", conversation_id).single();
       if (conv && conv.title === "New conversation") {
         await supabase.from("conversations").update({ title: message.slice(0, 60) }).eq("id", conversation_id);
