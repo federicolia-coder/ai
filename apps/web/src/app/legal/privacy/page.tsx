@@ -56,7 +56,8 @@ export default function PrivacyPage() {
       <h2>3. Come funziona l&apos;AI</h2>
       <p>
         Le risposte sono generate da un modello linguistico che gira su un
-        server gestito da TestardStudios. I tuoi messaggi non vengono inviati a
+        server gestito da TestardStudios, ospitato da VexoHost in Italia. I
+        tuoi messaggi non vengono inviati a
         fornitori di AI esterni e non vengono usati per addestrare modelli.
       </p>
       <p>
@@ -125,6 +126,10 @@ export default function PrivacyPage() {
           <strong>Render</strong> (hosting del sito): server UE (Francoforte)
         </li>
         <li>
+          <strong>VexoHost</strong> (server del modello AI, che elabora
+          messaggi e file allegati): server in Italia
+        </li>
+        <li>
           <strong>Stripe</strong> (elaborazione pagamenti)
         </li>
         <li>
@@ -143,7 +148,7 @@ export default function PrivacyPage() {
       <h2>8. Trasferimento dati extra-UE</h2>
       <p>
         Il database e i file sono conservati su server Supabase in UE
-        (Francoforte). Stripe, Brave, GitHub e Notion possono trattare dati
+        (Francoforte); le risposte sono generate su un server in Italia. Stripe, Brave, GitHub e Notion possono trattare dati
         negli USA sulla base delle Clausole Contrattuali Standard (SCC) e del
         Data Privacy Framework.
       </p>
