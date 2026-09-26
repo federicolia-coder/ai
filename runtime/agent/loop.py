@@ -56,6 +56,11 @@ MATH_QUESTION_PATTERN = re.compile(
     r"\d.*(%|per ?cento|percent|[+*×÷^]|\bx\s*\d)|quanto fa|calcola",
     re.IGNORECASE,
 )
+# Questions about the user's own connected services must go through the connector, never from memory.
+CONNECTOR_QUESTIONS = (
+    ("github_", re.compile(r"\b(repo\w*|issue\w*|github|pull request)\b", re.IGNORECASE)),
+    ("notion_", re.compile(r"\bnotion\b", re.IGNORECASE)),
+)
 NUDGE = "Chiama ora lo strumento adatto usando il formato <tool_call>. Non spiegare prima: scrivi solo la chiamata."
 
 INLINE_FILES_MAX_CHARS = 2000
@@ -135,7 +140,12 @@ def _last_user_text(messages: list[dict[str, str]]) -> str:
 def _should_nudge(reply: str, question: str, enabled: set[str]) -> bool:
     if ANNOUNCE_PATTERN.search(reply):
         return True
-    return "calculate" in enabled and bool(MATH_QUESTION_PATTERN.search(question))
+    if "calculate" in enabled and MATH_QUESTION_PATTERN.search(question):
+        return True
+    return any(
+        pattern.search(question) and any(name.startswith(prefix) for name in enabled)
+        for prefix, pattern in CONNECTOR_QUESTIONS
+    )
 
 
 def _format_tool_result(tool_name: str, result: dict) -> str:

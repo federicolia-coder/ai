@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { buildHistory, MAX_TOTAL_BYTES, relaySse, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
+import { buildHistory, connectorPrompt, MAX_TOTAL_BYTES, relaySse, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
 
 const plugins = [
   { id: "calc", tools: ["calculate"], enabled_by_default: true },
@@ -139,4 +139,11 @@ Deno.test("relaySse reports runtime errors and missing done", async () => {
 Deno.test("relaySse accepts a final event without trailing blank line", async () => {
   const outcome = await relaySse(streamOf(['data: {"type":"done","result":{"content":"ok"}}']), async () => {});
   assertEquals(outcome.result, { content: "ok" });
+});
+
+Deno.test("connector prompt lists only connected services", () => {
+  assertEquals(connectorPrompt([]), "");
+  const text = connectorPrompt(["github", "unknown"]);
+  assertEquals(text.includes("github_repos"), true);
+  assertEquals(text.includes("notion"), false);
 });

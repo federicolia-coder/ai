@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
-import { buildHistory, MAX_FILES, relaySse, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
+import { buildHistory, connectorPrompt, MAX_FILES, relaySse, resolveConnectors, resolvePluginTools, selectAttachments } from "./logic.ts";
 
 const RUNTIME_URL = Deno.env.get("TARRY_RUNTIME_URL") || "";
 const RUNTIME_SECRET = Deno.env.get("TARRY_RUNTIME_SECRET") || "";
@@ -227,7 +227,7 @@ Deno.serve(async (req: Request) => {
     };
     const runtimeBody = JSON.stringify({
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: SYSTEM_PROMPT + connectorPrompt(Object.keys(connectors.credentials)) },
         ...history,
         { role: "user", content: message },
       ],

@@ -130,6 +130,15 @@ def test_should_nudge():
     assert not _should_nudge("Circa 405 €.", "Quanto fa il 17,5% di 2.340 €?", {"search"})
 
 
+def test_should_nudge_connector_questions():
+    gh = {"github_repos", "github_issues"}
+    assert _should_nudge("Non posso vedere le tue repository.", "dimmi tutte le repo che ho", gh)
+    assert _should_nudge("Non ho accesso.", "Quali issue sono aperte?", gh)
+    assert not _should_nudge("Non ho accesso.", "dimmi tutte le repo che ho", {"search"})
+    assert _should_nudge("x", "cerca su Notion gli appunti", {"notion_search"})
+    assert not _should_nudge("Ciao!", "cerca su Notion gli appunti", gh)
+
+
 @pytest.mark.asyncio
 async def test_announcing_without_calling_gets_one_reminder(registry):
     announce = "Per calcolare usiamo la formula \\[ 2340 \\times 0.175 \\]. Voglio calcolare questo valore per te."

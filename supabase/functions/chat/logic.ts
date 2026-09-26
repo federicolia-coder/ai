@@ -44,6 +44,20 @@ export function resolveConnectors(grants: ConnectorGrant[]): {
   return { tools: [...tools], credentials };
 }
 
+const CONNECTOR_NOTES: Record<string, string> = {
+  github:
+    "GitHub: per repository, issue e file usa github_repos, github_issues e github_file. Non inventare mai il nome di un repository: se l'utente non lo dice, usa github_repos oppure github_issues senza repo.",
+  notion: "Notion: per pagine e appunti usa notion_search e poi notion_page.",
+  webhook: "Webhook: usa webhook_send solo quando l'utente chiede esplicitamente di inviare qualcosa.",
+};
+
+/** System prompt lines telling the model which of the user's services are connected right now. */
+export function connectorPrompt(slugs: string[]): string {
+  const notes = slugs.map((slug) => CONNECTOR_NOTES[slug]).filter(Boolean);
+  if (notes.length === 0) return "";
+  return ["", "L'utente ha collegato questi servizi e puoi accedervi con gli strumenti:", ...notes.map((n) => `- ${n}`)].join("\n");
+}
+
 export interface HistoryRow {
   role: string;
   content: string;

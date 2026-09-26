@@ -46,6 +46,27 @@ async def _get(token: str, path: str, params: dict[str, Any] | None = None) -> h
         return await client.get(f"{API}{path}", headers=_headers(token), params=params)
 
 
+async def _not_found(token: str, repo: str) -> dict[str, Any]:
+    """The model often guesses repo names; answer with the real ones so it can retry correctly."""
+    error: dict[str, Any] = {"error": f"Repository {repo} not found or not visible to the token."}
+    resp = await _get(token, "/user/repos", {"sort": "updated", "per_page": 30})
+    if resp.status_code == 200:
+        error["your_repos"] = [r.get("full_name") for r in resp.json()][:15]
+        error["hint"] = "Use one of your_repos, or ask the user which repository they mean."
+    return error
+
+
+def _issue(i: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "number": i.get("number"),
+        "title": common.truncate(i.get("title") or "", 150),
+        "state": i.get("state"),
+        "author": (i.get("user") or {}).get("login"),
+        "comments": i.get("comments"),
+        "updated": (i.get("updated_at") or "")[:10],
+    }
+
+
 class GitHubReposTool(Tool):
     def definition(self) -> ToolDefinition:
         return ToolDefinition(
@@ -87,14 +108,17 @@ class GitHubIssuesTool(Tool):
     def definition(self) -> ToolDefinition:
         return ToolDefinition(
             name="github_issues",
-            description="List issues of a GitHub repository (open by default). Pull requests are excluded.",
+            description=(
+                "List GitHub issues (open by default), pull requests excluded. Leave repo empty to list "
+                "issues across all the user's repositories. Never guess a repo name."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
-                    "repo": {"type": "string", "description": "Repository as owner/name"},
+                    "repo": {"type": "string", "description": "Optional: repository as owner/name, only if the user named it"},
                     "state": {"type": "string", "enum": ["open", "closed", "all"], "default": "open"},
                 },
-                "required": ["repo"],
+                "required": [],
             },
         )
 
@@ -102,25 +126,29 @@ class GitHubIssuesTool(Tool):
         token = common.credential(context, "github", "token")
         if not token:
             return common.not_connected("GitHub")
+        state = params.get("state") if params.get("state") in ("open", "closed", "all") else "open"
+        raw_repo = str(params.get("repo") or "").strip()
+        if not raw_repo:
+            # Every issue the token can see in repositories the user owns or belongs to.
+            resp = await _get(token, "/user/issues", {"filter": "all", "state": state, "per_page": 50})
+            if resp.status_code != 200:
+                return _error_for(resp)
+            issues = [
+                {"repo": (i.get("repository") or {}).get("full_name"), **_issue(i)}
+                for i in resp.json()
+                if "pull_request" not in i
+            ]
+            return {"repo": "all", "state": state, "count": len(issues), "issues": issues[:20]}
+
         repo = _repo(params)
         if not repo:
-            return {"error": "repo must be in the form owner/name"}
-        state = params.get("state") if params.get("state") in ("open", "closed", "all") else "open"
+            return {"error": "repo must be in the form owner/name, or empty for all repositories"}
         resp = await _get(token, f"/repos/{repo}/issues", {"state": state, "per_page": 30})
+        if resp.status_code == 404:
+            return await _not_found(token, repo)
         if resp.status_code != 200:
             return _error_for(resp)
-        issues = [
-            {
-                "number": i.get("number"),
-                "title": common.truncate(i.get("title") or "", 150),
-                "state": i.get("state"),
-                "author": (i.get("user") or {}).get("login"),
-                "comments": i.get("comments"),
-                "updated": (i.get("updated_at") or "")[:10],
-            }
-            for i in resp.json()
-            if "pull_request" not in i
-        ]
+        issues = [_issue(i) for i in resp.json() if "pull_request" not in i]
         return {"repo": repo, "state": state, "count": len(issues), "issues": issues[:15]}
 
 
@@ -132,7 +160,7 @@ class GitHubFileTool(Tool):
             parameters={
                 "type": "object",
                 "properties": {
-                    "repo": {"type": "string", "description": "Repository as owner/name"},
+                    "repo": {"type": "string", "description": "Repository as owner/name (call github_repos if unsure)"},
                     "path": {"type": "string", "description": "File or folder path; empty for the root"},
                 },
                 "required": ["repo"],
@@ -150,6 +178,8 @@ class GitHubFileTool(Tool):
         if ".." in path.split("/"):
             return {"error": "Invalid path"}
         resp = await _get(token, f"/repos/{repo}/contents/{quote(path)}")
+        if resp.status_code == 404 and not path:
+            return await _not_found(token, repo)
         if resp.status_code != 200:
             return _error_for(resp)
         data = resp.json()

@@ -85,11 +85,40 @@ async def test_github_issues_excludes_pull_requests(mock_http):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("repo", ["", "nope", "a/b/c", "../x", "a b/c"])
+@pytest.mark.parametrize("repo", ["nope", "a/b/c", "../x", "a b/c"])
 async def test_github_rejects_bad_repo(repo, mock_http):
     result = await GitHubIssuesTool().execute({"repo": repo}, GH)
     assert "owner/name" in result["error"]
     assert mock_http["requests"] == []
+
+
+@pytest.mark.asyncio
+async def test_github_issues_without_repo_lists_across_repos(mock_http):
+    mock_http["handler"] = lambda r: httpx.Response(200, json=[
+        {"number": 7, "title": "Crash", "state": "open", "user": {"login": "a"}, "repository": {"full_name": "fede/tarry"}},
+        {"number": 8, "title": "PR", "state": "open", "pull_request": {}, "repository": {"full_name": "fede/tarry"}},
+    ])
+    result = await GitHubIssuesTool().execute({}, GH)
+    assert result["repo"] == "all"
+    assert result["issues"] == [{"repo": "fede/tarry", "number": 7, "title": "Crash", "state": "open", "author": "a", "comments": None, "updated": ""}]
+    req = mock_http["requests"][0]
+    assert req.url.path == "/user/issues"
+    assert req.url.params["filter"] == "all"
+
+
+@pytest.mark.asyncio
+async def test_github_guessed_repo_returns_real_names(mock_http):
+    def handler(r):
+        if r.url.path == "/user/repos":
+            return httpx.Response(200, json=[{"full_name": "fede/tarry"}, {"full_name": "fede/ai"}])
+        return httpx.Response(404, json={"message": "Not Found"})
+
+    mock_http["handler"] = handler
+    result = await GitHubIssuesTool().execute({"repo": "user/repository"}, GH)
+    assert "not found" in result["error"]
+    assert result["your_repos"] == ["fede/tarry", "fede/ai"]
+    result = await GitHubFileTool().execute({"repo": "yourusername/yourrepository"}, GH)
+    assert result["your_repos"] == ["fede/tarry", "fede/ai"]
 
 
 @pytest.mark.asyncio
